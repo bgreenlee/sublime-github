@@ -6,7 +6,7 @@ editor that allows you to create public or private
 
 ## Installation
 
-    cd "~/Library/Application Support/Sublime Text 2/Packages/"
+    cd ~/"Library/Application Support/Sublime Text 2/Packages/"
     git clone https://github.com/bgreenlee/sublime-github.git
 
 The plugin should be picked up automatically. If not, restart Sublime Text.
