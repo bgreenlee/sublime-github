@@ -1,7 +1,4 @@
 [
-    { "caption": "Github: Private Gist from Selection",
-      "command": "private_gist_from_selection" },
-    { "caption": "Github: Public Gist from Selection",
-      "command": "public_gist_from_selection" }
-
+    { "caption": "Github: Private Gist from Selection", "command": "private_gist_from_selection" },
+    { "caption": "Github: Public Gist from Selection", "command": "public_gist_from_selection" }
 ]
