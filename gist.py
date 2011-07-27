@@ -121,7 +121,8 @@ class GistFromSelectionCommand(sublime_plugin.TextCommand):
 
     def get_filename(self):
         # use the current filename as the default
-        filename = os.path.basename(self.view.file_name())
+        current_filename = self.view.file_name() or "snippet.txt"
+        filename = os.path.basename(current_filename)
         self.view.window().show_input_panel(self.MSG_FILENAME, filename,
             self.on_done, None, None)
 
