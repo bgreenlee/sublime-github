@@ -65,6 +65,7 @@ class Gist(object):
             "file_ext[gistfile1]": os.path.splitext(self.filename)[1] or ".txt",
             "file_name[gistfile1]": self.filename,
             "file_contents[gistfile1]": self.content,
+            "description": self.description,
             "login": self.github_user.user,
             "token": self.github_user.token
             }
