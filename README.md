@@ -15,7 +15,7 @@ The plugin should be picked up automatically. If not, restart Sublime Text.
 
 First, your Github username and API token needs to be set. See
 <http://help.github.com/set-your-user-name-email-and-github-token/> to see how
-to do this. Then:
+to do this.* Then:
 
 1. Select some text.
 2. Bring up the Command Palette (&#8679;&#8984;P by default)
@@ -24,6 +24,20 @@ to do this. Then:
 4. At the bottom of your editor, you'll be prompted for a description. After
    entering that, you'll be prompted for a filename.
 5. The url for your new gist will be copied to the clipboard.
+
+\* Note for Mac OS X: If Sublime Text is not seeing your `GITHUB_USER` and
+`GITHUB_TOKEN` environment variables, add the following to your `.bashrc` after
+you've set the variables:
+
+    launchctl setenv PATH $PATH
+    launchctl setenv GITHUB_USER $GITHUB_USER
+    launchctl setenv GITHUB_TOKEN $GITHUB_TOKEN
+
+then, reload .bashrc:
+
+    source ~/.bashrc
+
+and restart Sublime Text.
 
 ## Bugs
 
