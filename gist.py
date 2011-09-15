@@ -3,6 +3,9 @@ import os.path
 import subprocess
 import httplib
 import urllib
+import re
+import curl
+from commandline import BinaryNotFoundError
 import sublime
 import sublime_plugin
 
@@ -32,7 +35,6 @@ class GithubUser(object):
             return None
 
         return cls(user, token)
-
 
 class GistUnauthorizedException(Exception):
     "Raised if we get a 401 from Github"
@@ -71,17 +73,27 @@ class Gist(object):
             }
         if not self.public:
             params['action_button'] = 'private'
-        conn = httplib.HTTPSConnection("gist.github.com")
-        req = conn.request("POST", "/gists", urllib.urlencode(params))
-        response = conn.getresponse()
-        conn.close()
-        if response.status == 302: # success
-            gist_url = response.getheader("Location")
-            return gist_url
-        elif response.status == 401: # unauthorized
-            raise GistUnauthorizedException()
-        else:
-            raise GistCreationException(self.ERR_CREATING % (response.status, response.reason))
+        if hasattr(httplib, "HTTPSConnection"):
+            conn = httplib.HTTPSConnection("gist.github.com")
+            req = conn.request("POST", "/gists", urllib.urlencode(params))
+            response = conn.getresponse()
+            conn.close()
+            if response.status == 302: # success
+                gist_url = response.getheader("Location")
+                return gist_url
+            elif response.status == 401: # unauthorized
+                raise GistUnauthorizedException()
+            else:
+                raise GistCreationException(self.ERR_CREATING % (response.status, response.reason))
+        else: # try curl
+            curl_response = curl.post("https://gist.github.com/gists",
+                                      urllib.urlencode(params))
+            m = re.match(r'.*?You are being <a href="(.*?)">redirected', curl_response)
+            if m and m.group(1):
+                return m.group(1)
+            else:
+                raise GistCreationException(self.ERR_CREATING %
+                                            ("Got response:", curl_response))
 
 
 class GistFromSelectionCommand(sublime_plugin.TextCommand):
@@ -101,6 +113,8 @@ class GistFromSelectionCommand(sublime_plugin.TextCommand):
         "incorrect. Please check them and try again.\n\n"\
         "See http://help.github.com/set-your-user-name-email-and-github-token/ "\
         "for more information."
+    ERR_NO_CURL = "Couldn't find curl, which is required for this to work "\
+        "under Linux. Please install curl and try again."
 
     def run(self, edit):
         self.github_user = None
@@ -150,6 +164,8 @@ class GistFromSelectionCommand(sublime_plugin.TextCommand):
                 sublime.error_message(self.ERR_UNAUTHORIZED)
             except GistCreationException, e:
                 sublime.error_message(e.message)
+            except BinaryNotFoundError, e:
+                sublime.error_message(self.ERR_NO_CURL)
 
 
 class PrivateGistFromSelectionCommand(GistFromSelectionCommand):
