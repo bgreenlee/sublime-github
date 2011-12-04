@@ -1,12 +1,13 @@
 # adapted from https://github.com/wbond/sublime_package_control/blob/master/Package%20Control.py
 import commandline
+import sublime
 
-def post(url, data, tries = 3):
+
+def post(url, data, tries=3):
     curl = commandline.find_binary('curl')
     if not curl:
         return False
-    command = [curl, '-f', '--user-agent', 'Sublime Github', '-s', 
-               '-d', data, url]
+    command = [curl, '-f', '--user-agent', 'Sublime Github', '-s', '-d', data, url]
 
     while tries > 1:
         tries -= 1
@@ -21,7 +22,6 @@ def post(url, data, tries = 3):
                 print "%s: Downloading %s timed out, trying again" % (__name__, url)
                 continue
 
-            sublime.error_message(__name__ + ': ' + error_message +
-                ' ' + error_string + ' posting ' + url + '.')
+            sublime.error_message(__name__ + ': ' + error_string + ' posting ' + url + '.')
         break
     return False

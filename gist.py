@@ -9,6 +9,7 @@ from commandline import BinaryNotFoundError
 import sublime
 import sublime_plugin
 
+
 class GithubUser(object):
     "Encapsulates a Github user."
     def __init__(self, user, token):
@@ -35,6 +36,7 @@ class GithubUser(object):
             return None
 
         return cls(user, token)
+
 
 class GistUnauthorizedException(Exception):
     "Raised if we get a 401 from Github"
@@ -75,17 +77,17 @@ class Gist(object):
             params['action_button'] = 'private'
         if hasattr(httplib, "HTTPSConnection"):
             conn = httplib.HTTPSConnection("gist.github.com")
-            req = conn.request("POST", "/gists", urllib.urlencode(params))
+            conn.request("POST", "/gists", urllib.urlencode(params))
             response = conn.getresponse()
             conn.close()
-            if response.status == 302: # success
+            if response.status == 302:  # success
                 gist_url = response.getheader("Location")
                 return gist_url
-            elif response.status == 401: # unauthorized
+            elif response.status == 401:  # unauthorized
                 raise GistUnauthorizedException()
             else:
                 raise GistCreationException(self.ERR_CREATING % (response.status, response.reason))
-        else: # try curl
+        else:  # try curl
             curl_response = curl.post("https://gist.github.com/gists",
                                       urllib.urlencode(params))
             m = re.match(r'.*?You are being <a href="(.*?)">redirected', curl_response)
@@ -131,7 +133,7 @@ class GistFromSelectionCommand(sublime_plugin.TextCommand):
                 self.view.window().show_input_panel(self.MSG_DESCRIPTION, "", self.on_done, None, None)
             else:
                 sublime.error_message(self.ERR_NO_USER_TOKEN)
-        except OSError, e:
+        except OSError:
             sublime.error_message(self.ERR_NO_GIT)
 
     def get_filename(self):
