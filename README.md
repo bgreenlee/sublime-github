@@ -1,8 +1,7 @@
-# Sublime Github
+# Sublime GitHub
 
 This is a plugin for the [Sublime Text 2](http://www.sublimetext.com/) text
-editor that allows you to create public or private
-[Github Gists](http://gist.github.com) from the currently selected text.
+editor that allows you to create and browse your [GitHub Gists](http://gist.github.com).
 
 ## Installation
 
@@ -13,37 +12,83 @@ The plugin should be picked up automatically. If not, restart Sublime Text.
 
 ## Usage
 
-First, your Github username and API token needs to be set. See
-<http://help.github.com/set-your-user-name-email-and-github-token/> to see how
-to do this.* Then:
+The first time you run one of the commands, it will ask you for your GitHub
+username and password in order to create a GitHub API access token, which gets saved
+in the Sublime GitHub user settings file. Your username and password are not
+stored anywhere, but if you would rather generate the access token yourself, see
+the "Generating Your Own Access Token" section below.
 
-1. Select some text.
-2. Bring up the Command Palette (&#8679;&#8984;P by default)
-3. Start typing "Github", and select either "Private Gist from Selection" or
-   "Public Gist from Selection"
-4. At the bottom of your editor, you'll be prompted for a description. After
-   entering that, you'll be prompted for a filename.
-5. The url for your new gist will be copied to the clipboard.
+The following commands are available in the Command Palette:
 
-\* Note for Mac OS X: If Sublime Text is not seeing your `GITHUB_USER` and
-`GITHUB_TOKEN` environment variables, add the following to your `.bashrc` after
-you've set the variables:
+* **GitHub: Private Gist from Selection**
 
-    launchctl setenv PATH $PATH
-    launchctl setenv GITHUB_USER $GITHUB_USER
-    launchctl setenv GITHUB_TOKEN $GITHUB_TOKEN
+	Create a private gist from the currently selected text (or, if nothing is selected,
+	the contents of the active editor.
 
-then, reload .bashrc:
+* **GitHub: Public Gist from Selection**
 
-    source ~/.bashrc
+	Create a public gist from the currently selected text (or, if nothing is selected,
+	the contents of the active editor.
 
-and restart Sublime Text.
+* **GitHub: Copy Gist to Clipboard**
 
-## Bugs
+    Displays a quick select panel listing all of your gists, and selecting one will
+    copy the contents of that gist to your clipboard.
+
+* **GitHub: Copy Starred Gist to Clipboard**
+
+    Displays a quick select panel listing only your starred gists, and selecting one will
+    copy the contents of that gist to your clipboard.
+
+* **GitHub: Open Gist in Editor**
+
+    Displays a quick select panel listing all of your gists, and selecting one will
+    open a new editor tab with the contents of that gist.
+
+* **GitHub: Open Starred Gist in Editor**
+
+    Displays a quick select panel listing only your starred gists, and selecting one will
+    open a new editor tab with the contents of that gist.
+
+* **GitHub: Open Gist in Browser**
+
+    Displays a quick select panel listing all of your gists, and selecting one will
+    open that gist in your default web browser.
+
+* **GitHub: Open Starred Gist in Editor**
+
+    Displays a quick select panel listing only your starred gists, and selecting one will
+    open that gist in your default web browser.
+
+Note that depending on the number of gists you have, there can be a considerable
+delay before your list of gists appears. I'm hoping I can implement caching of
+the list, but right now the GitHub API doesn't have any reliable mechanism for
+that.
+
+## Generating Your Own Access Token
+
+If you feel uncomfortable giving your GitHub username and password to the
+plugin, you can generate a GitHub API access token yourself. Just open up
+a Terminal window/shell (Windows users, you're on your own here), and run:
+
+    curl -u "username:password" -d '{"scopes":["gist"]}' https://api.github.com/authorizations
+
+where `username` and `password` are your GitHub credentials. You'll get back
+a JSON response that includes a 40-digit "token" value (e.g. `6423ba8429a152ff4a7279d1e8f4674029d3ef87`).
+Go to Sublime Text 2 -> Preferences -> Package Settings -> GitHub -> Settings - User,
+and insert the token there. It should look like:
+
+    {
+        "github_token": "6423ba8429a152ff4a7279d1e8f4674029d3ef87"
+    }
+
+That's it!
+
+## Bugs and Feature Requests
 
 <http://github.com/bgreenlee/sublime-github/issues>
 
 ## Copyright
 
-Copyright &copy; 2011 Brad Greenlee. See LICENSE for details.
+Copyright &copy; 2011+ Brad Greenlee. See LICENSE for details.
 

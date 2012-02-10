@@ -1,4 +1,10 @@
 [
-    { "caption": "Github: Private Gist from Selection", "command": "private_gist_from_selection" },
-    { "caption": "Github: Public Gist from Selection", "command": "public_gist_from_selection" }
+    { "caption": "GitHub: Private Gist from Selection", "command": "private_gist_from_selection" },
+    { "caption": "GitHub: Public Gist from Selection", "command": "public_gist_from_selection" },
+    { "caption": "GitHub: Copy Gist to Clipboard", "command": "open_gist" },
+    { "caption": "GitHub: Copy Starred Gist to Clipboard", "command": "open_starred_gist" },
+    { "caption": "GitHub: Open Gist in Editor", "command": "open_gist_in_editor" },
+    { "caption": "GitHub: Open Starred Gist in Editor", "command": "open_starred_gist_in_editor" },
+    { "caption": "GitHub: Open Gist in Browser", "command": "open_gist_in_browser" },
+    { "caption": "GitHub: Open Starred Gist in Browser", "command": "open_starred_gist_in_browser" }
 ]
