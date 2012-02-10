@@ -31,9 +31,14 @@ class GistApi(object):
 
     @classmethod
     def get_token(cls, username, password):
+        auth_data = {
+            "scopes": ["gist"],
+            "note": "Sublime GitHub",
+            "note_url": "https://github.com/bgreenlee/sublime-github"
+        }
         resp = cls.rsession.post("https://api.github.com/authorizations",
                                  auth=(username, password),
-                                 data='{"scopes":["gist"]}')
+                                 data=json.dumps(auth_data))
         if resp.status_code == 201:
             data = json.loads(resp.text)
             return data["token"]
