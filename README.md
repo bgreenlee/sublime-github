@@ -60,10 +60,15 @@ The following commands are available in the Command Palette:
     Displays a quick select panel listing only your starred gists, and selecting one will
     open that gist in your default web browser.
 
-Note that depending on the number of gists you have, there can be a considerable
-delay before your list of gists appears. I'm hoping I can implement caching of
-the list, but right now the GitHub API doesn't have any reliable mechanism for
-that.
+
+## Issues and Limitations
+
+Depending on the number of gists you have, there can be a considerable delay before
+your list of gists appears. I'm hoping I can implement caching of the list, but 
+right now the GitHub API doesn't have any reliable mechanism for that.
+
+It also currently only fetches your most recent 100 gists. If/when I'm able to work out
+the caching issue, I'll update this to fetch all gists.
 
 ## Generating Your Own Access Token
 
