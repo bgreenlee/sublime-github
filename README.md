@@ -5,8 +5,20 @@ editor that allows you to create and browse your [GitHub Gists](http://gist.gith
 
 ## Installation
 
+The easiest way to install is via the [Sublime Package Control](http://wbond.net/sublime_packages/package_control)
+plugin. Just open "Package Control: Install Package" in your Command Palette and search for
+"sublime-github".
+
+To install it manually in a shell/Terminal (on OS X or Linux), via git:
+
     cd ~/"Library/Application Support/Sublime Text 2/Packages/"
     git clone https://github.com/bgreenlee/sublime-github.git
+
+or, if you don't have git installed:
+
+    cd ~/"Library/Application Support/Sublime Text 2/Packages/"
+    rm -rf bgreenlee-sublime-github*  # remove any old versions
+    curl -L https://github.com/bgreenlee/sublime-github/tarball/gist-browsing | tar xf -
 
 The plugin should be picked up automatically. If not, restart Sublime Text.
 
@@ -61,14 +73,13 @@ The following commands are available in the Command Palette:
     open that gist in your default web browser.
 
 
-## Issues and Limitations
+## Issues
 
-Depending on the number of gists you have, there can be a considerable delay before
-your list of gists appears. I'm hoping I can implement caching of the list, but 
-right now the GitHub API doesn't have any reliable mechanism for that.
-
-It also currently only fetches your most recent 100 gists. If/when I'm able to work out
-the caching issue, I'll update this to fetch all gists.
+Depending on the number of gists you have, there can be a considerable delay the first time
+your list of gists is fetched. Subsequent requests will be cached and should be a bit faster
+(although the GitHub API's ETags are currently not correct; once that fix that, it should speed
+things up). In the meantime, if there are gists that you open frequently, open them on GitHub and
+"Star" them, then access them via the Open/Copy Starred Gist commands.
 
 ## Generating Your Own Access Token
 

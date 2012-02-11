@@ -13,6 +13,7 @@ import requests
 class GistApi(object):
     "Encapsulates the Gist API"
     BASE_URI = "https://api.github.com"
+    PER_PAGE = 100
     etags = {}
     cache = {}
 
@@ -68,7 +69,6 @@ class GistApi(object):
 
         resp = self.rsession.request(method, url,
                                      headers=headers,
-                                     config={'verbose': sys.stdout},
                                      params=params,
                                      data=data,
                                      allow_redirects=True)
@@ -99,7 +99,16 @@ class GistApi(object):
         return data["html_url"]
 
     def list(self, starred=False):
-        data = self.get("/gists" + ("/starred" if starred else ""), params={'per_page': 100})
+        page = 1
+        data = []
+        # fetch all pages
+        while True:
+            endpoint = "/gists" + ("/starred" if starred else "")
+            page_data = self.get(endpoint, params={'page': page, 'per_page': self.PER_PAGE})
+            data.extend(page_data)
+            if len(page_data) < self.PER_PAGE:
+                break
+            page += 1
         return data
 
 
