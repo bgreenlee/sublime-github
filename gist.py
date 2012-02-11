@@ -13,13 +13,15 @@ import requests
 class GistApi(object):
     "Encapsulates the Gist API"
     BASE_URI = "https://api.github.com"
+    etags = {}
+    cache = {}
 
     class UnauthorizedException(Exception):
         "Raised if we get a 401 from GitHub"
         pass
 
     class UnknownException(Exception):
-        "Raised if we get a response code we don't recognize from Github"
+        "Raised if we get a response code we don't recognize from GitHub"
         pass
 
     # set up requests session with the github ssl cert
@@ -53,21 +55,38 @@ class GistApi(object):
     def get(self, endpoint, params=None):
         return self.request('get', endpoint, params=params)
 
-    def request(self, method, endpoint, params=None, data=None):
+    def request(self, method, url, params=None, data=None):
+        if not url.startswith("http"):
+            url = self.BASE_URI + url
         if data:
             data = json.dumps(data)
-        resp = self.rsession.request(method, self.BASE_URI + endpoint,
-                                     headers={"Authorization": "token %s" % self.token},
+
+        headers = {"Authorization": "token %s" % self.token}
+        # add an etag to the header if we have one
+        if method == 'get' and url in self.etags:
+            headers["If-None-Match"] = self.etags[url]
+
+        resp = self.rsession.request(method, url,
+                                     headers=headers,
                                      config={'verbose': sys.stdout},
                                      params=params,
-                                     data=data)
-        print "headers: ", resp.headers
-        if resp.status_code < 300:
-            return json.loads(resp.text)
-        elif resp.status_code == 401:
+                                     data=data,
+                                     allow_redirects=True)
+        if resp.status_code in [requests.codes.ok, requests.codes.created]:
+            if 'application/json' in resp.headers['content-type']:
+                resp_data = json.loads(resp.text)
+            else:
+                resp_data = resp.text
+            if method == 'get':  # cache the response
+                etag = resp.headers['ETag']
+                self.etags[url] = etag
+                self.cache[etag] = resp_data
+            return resp_data
+        elif resp.status_code == requests.codes.not_modified:
+            return self.cache[resp.headers['ETag']]
+        elif resp.status_code == requests.codes.unauthorized:
             raise self.UnauthorizedException()
         else:
-            print "content:", resp.content
             raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
 
     def create(self, description="", filename=None, content="", public=False):
@@ -82,10 +101,6 @@ class GistApi(object):
     def list(self, starred=False):
         data = self.get("/gists" + ("/starred" if starred else ""), params={'per_page': 100})
         return data
-
-    def get_url(self, url):
-        resp = self.rsession.get(url, headers={"Authorization": "token %s" % self.token})
-        return resp.text
 
 
 class BaseGistCommand(sublime_plugin.TextCommand):
@@ -161,7 +176,6 @@ class OpenGistCommand(BaseGistCommand):
         self.gistapi = GistApi(self.github_token)
         try:
             self.gists = self.gistapi.list(starred=self.starred)
-            print "got %d gists" % len(self.gists)
             packed_gists = map(lambda g: ''.join([g["files"].keys()[0], ': ' if g["description"] else '', g["description"] or '']), self.gists)
             self.view.window().show_quick_panel(packed_gists, self.on_done)
         except GistApi.UnauthorizedException:
@@ -176,7 +190,7 @@ class OpenGistCommand(BaseGistCommand):
         gist = self.gists[idx]
         filename = gist["files"].keys()[0]
         filedata = gist["files"][filename]
-        content = self.gistapi.get_url(filedata["raw_url"])
+        content = self.gistapi.get(filedata["raw_url"])
         if self.open_in_editor:
             new_view = self.view.window().new_file()
             edit = new_view.begin_edit('gist')
