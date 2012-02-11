@@ -7,7 +7,8 @@ editor that allows you to create and browse your [GitHub Gists](http://gist.gith
 
 The easiest way to install is via the [Sublime Package Control](http://wbond.net/sublime_packages/package_control)
 plugin. Just open "Package Control: Install Package" in your Command Palette and search for
-"sublime-github".
+"sublime-github" (or, if you already have it installed, select "Package Control: Upgrade Package"
+to upgrade).
 
 To install it manually in a shell/Terminal (on OS X or Linux), via git:
 
