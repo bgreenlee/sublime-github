@@ -72,6 +72,7 @@ class GistApi(object):
                                      params=params,
                                      data=data,
                                      allow_redirects=True)
+        full_url = resp.url
         if resp.status_code in [requests.codes.ok, requests.codes.created]:
             if 'application/json' in resp.headers['content-type']:
                 resp_data = json.loads(resp.text)
@@ -79,7 +80,7 @@ class GistApi(object):
                 resp_data = resp.text
             if method == 'get':  # cache the response
                 etag = resp.headers['ETag']
-                self.etags[url] = etag
+                self.etags[full_url] = etag
                 self.cache[etag] = resp_data
             return resp_data
         elif resp.status_code == requests.codes.not_modified:
