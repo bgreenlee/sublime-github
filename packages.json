@@ -1,0 +1,20 @@
+{
+    "schema_version": "1.2",
+    "packages": [
+        {
+            "name": "sublime-github",
+            "description": "Create and browse GitHub Gists",
+            "author": "Brad Greenlee",
+            "homepage": "http://github.com/bgreenlee/sublime-github",
+            "last_modified": "2012-02-11 23:30:00",
+            "platforms": {
+                "*": [
+                    {
+                        "version": "2.0.0",
+                        "url": "https://nodeload.github.com/bgreenlee/sublime-github/zipball/master"
+                    }
+                ]
+            }
+        }
+    ]
+}
