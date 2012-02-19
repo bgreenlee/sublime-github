@@ -12,8 +12,11 @@ from socket import error as SocketError, timeout as SocketTimeout
 try:
     from select import poll, POLLIN
 except ImportError: # Doesn't exist on OSX and other platforms
-    from select import select
-    poll = False
+    try:
+        from select import select
+        poll = False
+    except ImportError:  # select doesn't exist in Windows
+        select = False  # but we can get by without it
 
 try:   # Python 3
     from http.client import HTTPConnection, HTTPSConnection, HTTPException
@@ -592,6 +595,9 @@ def is_connection_dropped(conn):
     :param conn:
         ``HTTPConnection`` object.
     """
+    if not select:
+        return False
+
     if not poll:
         return select([conn.sock], [], [], 0.0)[0]
 

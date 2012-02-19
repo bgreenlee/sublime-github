@@ -76,9 +76,6 @@ The following commands are available in the Command Palette:
 
 ## Issues
 
-* It does not currently work on Windows. I hope to fix this soon. Keep an eye on 
-<https://github.com/bgreenlee/sublime-github/issues/5>.
-
 * Linux requires the [curl](http://curl.haxx.se/) binary to be installed on your system (in one of:
 `/usr/local/sbin`, `/usr/local/bin`, `/usr/sbin`, `/usr/bin`, `/sbin`, or `/bin`).
 
