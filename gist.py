@@ -1,13 +1,10 @@
-import sys
 import os
 import os.path
 import sublime
 import sublime_plugin
 import json
 import webbrowser
-
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
-import requests
+import sublime_requests as requests
 
 
 class GistApi(object):
@@ -73,18 +70,20 @@ class GistApi(object):
                                      data=data,
                                      allow_redirects=True)
         full_url = resp.url
-        if resp.status_code in [requests.codes.ok, requests.codes.created]:
+        if resp.status_code in [requests.codes.ok,
+                                requests.codes.created,
+                                requests.codes.found]:
             if 'application/json' in resp.headers['content-type']:
                 resp_data = json.loads(resp.text)
             else:
                 resp_data = resp.text
             if method == 'get':  # cache the response
-                etag = resp.headers['ETag']
+                etag = resp.headers['etag']
                 self.etags[full_url] = etag
                 self.cache[etag] = resp_data
             return resp_data
         elif resp.status_code == requests.codes.not_modified:
-            return self.cache[resp.headers['ETag']]
+            return self.cache[resp.headers['etag']]
         elif resp.status_code == requests.codes.unauthorized:
             raise self.UnauthorizedException()
         else:
