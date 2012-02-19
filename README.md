@@ -76,7 +76,13 @@ The following commands are available in the Command Palette:
 
 ## Issues
 
-Depending on the number of gists you have, there can be a considerable delay the first time
+* It does not currently work on Windows. I hope to fix this soon. Keep an eye on 
+<https://github.com/bgreenlee/sublime-github/issues/5>.
+
+* Linux requires the [curl](http://curl.haxx.se/) binary to be installed on your system (in one of:
+`/usr/local/sbin`, `/usr/local/bin`, `/usr/sbin`, `/usr/bin`, `/sbin`, or `/bin`).
+
+* Depending on the number of gists you have, there can be a considerable delay the first time
 your list of gists is fetched. Subsequent requests will be cached and should be a bit faster
 (although the GitHub API's ETags are currently not correct; once that fix that, it should speed
 things up). In the meantime, if there are gists that you open frequently, open them on GitHub and
