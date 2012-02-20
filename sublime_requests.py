@@ -38,19 +38,22 @@ class CurlSession(object):
     def _build_response(self, text):
         raw_response = self._parse_http(text)
         response = requests.models.Response()
+        response.encoding = 'utf-8'
         response.status_code = raw_response.status
         response.headers = dict(raw_response.getheaders())
         response._content = raw_response.read()
         return response
 
-    def request(self, method, url, headers=None, params=None, data=None, allow_redirects=False):
-    # def post(self, url, data, tries=3):
+    def request(self, method, url, headers=None, params=None, data=None, auth=None, allow_redirects=False):
         curl = commandline.find_binary('curl')
         curl_options = ['-i', '-L', '-f', '--user-agent', 'Sublime Github', '-s']
+        if auth:
+            curl_options.extend(['--user', "%s:%s" % auth])
         if self.verify:
             curl_options.extend(['--cacert', self.verify])
-        for k, v in headers.iteritems():
-            curl_options.extend(['-H', "%s: %s" % (k, v)])
+        if headers:
+            for k, v in headers.iteritems():
+                curl_options.extend(['-H', "%s: %s" % (k, v)])
         if method == 'post':
             curl_options.extend(['-d', data])
         if params:
@@ -75,6 +78,8 @@ class CurlSession(object):
 
         return False
 
+    def post(self, *args, **kwargs):
+        return self.request("post", *args, **kwargs)
 
 def session(verify=None):
     if hasattr(httplib, "HTTPSConnection"):

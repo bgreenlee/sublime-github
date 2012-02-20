@@ -8,7 +8,10 @@ import gzip
 import logging
 import zlib
 
-from io import BytesIO
+try:
+    from io import BytesIO
+except ImportError:
+    pass  # _fileio doesn't seem to exist in ST's python in Linux, but we don't need it
 
 from .exceptions import HTTPError
 

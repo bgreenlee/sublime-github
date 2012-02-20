@@ -12,7 +12,10 @@ try:
 except ImportError:
     from .packages.mimetools_choose_boundary import choose_boundary
 
-from io import BytesIO
+try:
+    from io import BytesIO
+except ImportError:
+    pass  # _fileio doesn't seem to exist in ST's python in Linux, but we don't need it
 
 from .packages import six
 from .packages.six import b

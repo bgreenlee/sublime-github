@@ -22,8 +22,12 @@ try:   # Python 3
     from http.client import HTTPConnection, HTTPSConnection, HTTPException
     from http.client import HTTP_PORT, HTTPS_PORT
 except ImportError:
-    from httplib import HTTPConnection, HTTPSConnection, HTTPException
+    from httplib import HTTPConnection, HTTPException
     from httplib import HTTP_PORT, HTTPS_PORT
+    try:
+        from httplib import HTTPSConnection
+    except ImportError:   # Doesn't exist in ST's python in Linux, but we don't need it
+        HTTPSConnection = HTTPConnection
 
 try:   # Python 3
     from queue import Queue, Empty, Full
