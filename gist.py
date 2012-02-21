@@ -6,9 +6,11 @@ import json
 import webbrowser
 import sublime_requests as requests
 import plistlib
-from xml.parsers.expat import ExpatError
 import logging as logger
-
+try:
+    import xml.parsers.expat as expat
+except ImportError:
+    expat = None
 
 logger.basicConfig(format='[sublime-github] %(levelname)s: %(message)s')
 
@@ -209,16 +211,17 @@ class OpenGistCommand(BaseGistCommand):
         content = self.gistapi.get(filedata["raw_url"])
         if self.open_in_editor:
             new_view = self.view.window().new_file()
-            # set syntax file
-            if not self.syntax_file_map:
-                self.syntax_file_map = self._generate_syntax_file_map()
-            try:
-                extension = os.path.splitext(filename)[1][1:].lower()
-                syntax_file = self.syntax_file_map[extension]
-                new_view.set_syntax_file(syntax_file)
-            except KeyError:
-                logger.warn("no mapping for '%s'" % extension)
-                pass
+            if expat:  # not present in Linux
+                # set syntax file
+                if not self.syntax_file_map:
+                    self.syntax_file_map = self._generate_syntax_file_map()
+                try:
+                    extension = os.path.splitext(filename)[1][1:].lower()
+                    syntax_file = self.syntax_file_map[extension]
+                    new_view.set_syntax_file(syntax_file)
+                except KeyError:
+                    logger.warn("no mapping for '%s'" % extension)
+                    pass
             # insert the gist
             edit = new_view.begin_edit('gist')
             new_view.insert(edit, 0, content)
@@ -242,7 +245,7 @@ class OpenGistCommand(BaseGistCommand):
                     if plist:
                         for file_type in plist['fileTypes']:
                             syntax_file_map[file_type.lower()] = syntax_file
-                except ExpatError:  # can't parse
+                except expat.ExpatError:  # can't parse
                     logger.warn("could not parse '%s'" % syntax_file)
                 except KeyError:  # no file types
                     pass
