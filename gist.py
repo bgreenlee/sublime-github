@@ -5,6 +5,12 @@ import sublime_plugin
 import json
 import webbrowser
 import sublime_requests as requests
+import plistlib
+from xml.parsers.expat import ExpatError
+import logging as logger
+
+
+logger.basicConfig(format='[sublime-github] %(levelname)s: %(message)s')
 
 
 class GistApi(object):
@@ -172,6 +178,7 @@ class OpenGistCommand(BaseGistCommand):
     MSG_SUCCESS = "Contents of '%s' copied to the clipboard."
     starred = False
     open_in_editor = False
+    syntax_file_map = None
 
     def run(self, edit):
         super(OpenGistCommand, self).run(edit)
@@ -202,6 +209,17 @@ class OpenGistCommand(BaseGistCommand):
         content = self.gistapi.get(filedata["raw_url"])
         if self.open_in_editor:
             new_view = self.view.window().new_file()
+            # set syntax file
+            if not self.syntax_file_map:
+                self.syntax_file_map = self._generate_syntax_file_map()
+            try:
+                extension = os.path.splitext(filename)[1][1:].lower()
+                syntax_file = self.syntax_file_map[extension]
+                new_view.set_syntax_file(syntax_file)
+            except KeyError:
+                logger.warn("no mapping for '%s'" % extension)
+                pass
+            # insert the gist
             edit = new_view.begin_edit('gist')
             new_view.insert(edit, 0, content)
             new_view.end_edit(edit)
@@ -209,6 +227,27 @@ class OpenGistCommand(BaseGistCommand):
         else:
             sublime.set_clipboard(content)
             sublime.status_message(self.MSG_SUCCESS % filename)
+
+    @staticmethod
+    def _generate_syntax_file_map():
+        syntax_file_map = {}
+        packages_path = sublime.packages_path()
+        packages = [f for f in os.listdir(packages_path) if os.path.isdir(os.path.join(packages_path, f))]
+        for package in packages:
+            package_dir = os.path.join(packages_path, package)
+            syntax_files = [os.path.join(package_dir, f) for f in os.listdir(package_dir) if f.endswith(".tmLanguage")]
+            for syntax_file in syntax_files:
+                try:
+                    plist = plistlib.readPlist(syntax_file)
+                    if plist:
+                        for file_type in plist['fileTypes']:
+                            syntax_file_map[file_type.lower()] = syntax_file
+                except ExpatError:  # can't parse
+                    logger.warn("could not parse '%s'" % syntax_file)
+                except KeyError:  # no file types
+                    pass
+
+        return syntax_file_map
 
 
 class OpenStarredGistCommand(OpenGistCommand):
