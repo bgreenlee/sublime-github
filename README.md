@@ -85,6 +85,10 @@ your list of gists is fetched. Subsequent requests will be cached and should be 
 things up). In the meantime, if there are gists that you open frequently, open them on GitHub and
 "Star" them, then access them via the Open/Copy Starred Gist commands.
 
+* Setting the file type for syntax highlighting when opening a gist in the editor does not work
+in Linux. I could get it to work with significant effort, so if you desperately want it, open
+an issue.
+
 ## Generating Your Own Access Token
 
 If you feel uncomfortable giving your GitHub username and password to the
