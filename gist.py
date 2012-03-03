@@ -58,6 +58,9 @@ class GistApi(object):
     def post(self, endpoint, data=None):
         return self.request('post', endpoint, data=data)
 
+    def patch(self, endpoint, data=None):
+        return self.request('patch', endpoint, data=data)
+
     def get(self, endpoint, params=None):
         return self.request('get', endpoint, params=params)
 
@@ -105,6 +108,13 @@ class GistApi(object):
                                      "public": public,
                                      "files": {filename: {"content": content}}})
         return data["html_url"]
+
+    def update(self, gist, content):
+        filename = gist["files"].keys()[0]
+        resp = self.patch("/gists/" + gist["id"],
+                           {"description": gist["description"],
+                            "files": {filename: {"content": content}}})
+        return resp["html_url"]
 
     def list(self, starred=False):
         page = 1
@@ -227,6 +237,7 @@ class OpenGistCommand(BaseGistCommand):
             new_view.insert(edit, 0, content)
             new_view.end_edit(edit)
             new_view.set_name(filename)
+            new_view.settings().set('gist', gist)
         else:
             sublime.set_clipboard(content)
             sublime.status_message(self.MSG_SUCCESS % filename)
@@ -364,3 +375,35 @@ class PublicGistFromSelectionCommand(GistFromSelectionCommand):
     Command to create a public Github gist from the current selection.
     """
     public = True
+
+
+class UpdateGistCommand(BaseGistCommand):
+    MSG_SUCCESS = "Gist updated and url copied to the clipboard."
+
+    def run(self, edit):
+        super(UpdateGistCommand, self).run(edit)
+        self.gist = self.view.settings().get('gist')
+        if not self.gist:
+            sublime.error_message("Can't update: this doesn't appear to be a valid gist.")
+            return
+        if self.github_token:
+            self.update()
+        else:
+            self.callback = self.update
+            self.get_token()
+
+    def update(self):
+        text = self.view.substr(sublime.Region(0, self.view.size()))
+        gistapi = GistApi(self.github_token)
+        try:
+            gist_url = gistapi.update(self.gist, text)
+            sublime.set_clipboard(gist_url)
+            sublime.status_message(self.MSG_SUCCESS)
+        except GistApi.UnauthorizedException:
+            # clear out the bad token so we can reset it
+            self.settings.set("github_token", "")
+            sublime.save_settings("GitHub.sublime-settings")
+            sublime.error_message(self.ERR_UNAUTHORIZED)
+            sublime.set_timeout(self.get_username, 50)
+        except GistApi.UnknownException, e:
+            sublime.error_message(e.message)

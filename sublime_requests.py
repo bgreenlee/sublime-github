@@ -44,7 +44,7 @@ class CurlSession(object):
         response._content = raw_response.read()
         return response
 
-    def request(self, method, url, headers=None, params=None, data=None, auth=None, allow_redirects=False):
+    def request(self, method, url, headers=None, params=None, data=None, auth=None, allow_redirects=False, config=None):
         curl = commandline.find_binary('curl')
         curl_options = ['-i', '-L', '-f', '--user-agent', 'Sublime Github', '-s']
         if auth:
@@ -54,8 +54,10 @@ class CurlSession(object):
         if headers:
             for k, v in headers.iteritems():
                 curl_options.extend(['-H', "%s: %s" % (k, v)])
-        if method == 'post':
+        if method in ('post', 'patch'):
             curl_options.extend(['-d', data])
+        if method == 'patch':
+            curl_options.extend(['-X', 'PATCH'])
         if params:
             url += '?' + '&'.join(['='.join([k, str(v)]) for k, v in params.iteritems()])
 
@@ -80,6 +82,7 @@ class CurlSession(object):
 
     def post(self, *args, **kwargs):
         return self.request("post", *args, **kwargs)
+
 
 def session(verify=None):
     if hasattr(httplib, "HTTPSConnection"):

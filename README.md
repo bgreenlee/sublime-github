@@ -73,6 +73,10 @@ The following commands are available in the Command Palette:
     Displays a quick select panel listing only your starred gists, and selecting one will
     open that gist in your default web browser.
 
+* **GitHub: Update Gist**
+
+    Update the gist open in the current editor.
+
 
 ## Issues
 

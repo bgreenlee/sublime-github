@@ -6,5 +6,6 @@
     { "caption": "GitHub: Open Gist in Editor", "command": "open_gist_in_editor" },
     { "caption": "GitHub: Open Starred Gist in Editor", "command": "open_starred_gist_in_editor" },
     { "caption": "GitHub: Open Gist in Browser", "command": "open_gist_in_browser" },
-    { "caption": "GitHub: Open Starred Gist in Browser", "command": "open_starred_gist_in_browser" }
+    { "caption": "GitHub: Open Starred Gist in Browser", "command": "open_starred_gist_in_browser" },
+    { "caption": "GitHub: Update Gist", "command": "update_gist" }
 ]
