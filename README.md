@@ -19,7 +19,7 @@ or, if you don't have git installed:
 
     cd ~/"Library/Application Support/Sublime Text 2/Packages/"
     rm -rf bgreenlee-sublime-github*  # remove any old versions
-    curl -L https://github.com/bgreenlee/sublime-github/tarball/gist-browsing | tar xf -
+    curl -L https://github.com/bgreenlee/sublime-github/tarball/master | tar xf -
 
 The plugin should be picked up automatically. If not, restart Sublime Text.
 
