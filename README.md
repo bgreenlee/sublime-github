@@ -10,7 +10,7 @@ plugin. Just open "Package Control: Install Package" in your Command Palette and
 "sublime-github" (or, if you already have it installed, select "Package Control: Upgrade Package"
 to upgrade).
 
-To install it manually in a shell/Terminal (on OS X or Linux), via git:
+To install it manually in a shell/Terminal (on OS X, Linux or Cygwin), via git:
 
     cd ~/"Library/Application Support/Sublime Text 2/Packages/"
     git clone https://github.com/bgreenlee/sublime-github.git
@@ -97,7 +97,7 @@ an issue.
 
 If you feel uncomfortable giving your GitHub username and password to the
 plugin, you can generate a GitHub API access token yourself. Just open up
-a Terminal window/shell (Windows users, you're on your own here), and run:
+a Terminal window/shell (on OS X, Linux or Cygwin), and run:
 
     curl -u username -d '{"scopes":["gist"]}' https://api.github.com/authorizations
 
