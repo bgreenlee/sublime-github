@@ -5,14 +5,14 @@ editor that allows you to create and browse your [GitHub Gists](http://gist.gith
 
 ## Installation
 
-The easiest way to install is via the [Sublime Package Control](http://wbond.net/sublime_packages/package_control)
-plugin. Just open "Package Control: Install Package" in your Command Palette and search for
+**The easiest way to install is via the** [**Sublime Package Control**](http://wbond.net/sublime_packages/package_control) **plugin.**
+Just open "Package Control: Install Package" in your Command Palette and search for
 "sublime-github" (or, if you already have it installed, select "Package Control: Upgrade Package"
 to upgrade).
 
 To install it manually in a shell/Terminal (on OS X, Linux or Cygwin), via git:
 
-    cd ~/"Library/Application Support/Sublime Text 2/Packages/"
+    cd ~/"Library/Application Support/Sublime Text 2/Packages/" # location on OS X; will be different on Linux & Windows
     git clone https://github.com/bgreenlee/sublime-github.git
 
 or, if you don't have git installed:
