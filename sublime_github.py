@@ -2,10 +2,9 @@ import os
 import os.path
 import sublime
 import sublime_plugin
-import json
 import webbrowser
-import sublime_requests as requests
 import plistlib
+from github import GitHubApi
 import logging as logger
 try:
     import xml.parsers.expat as expat
@@ -15,124 +14,9 @@ except ImportError:
 logger.basicConfig(format='[sublime-github] %(levelname)s: %(message)s')
 
 
-class GistApi(object):
-    "Encapsulates the Gist API"
-    BASE_URI = "https://api.github.com"
-    PER_PAGE = 100
-    etags = {}
-    cache = {}
-
-    class UnauthorizedException(Exception):
-        "Raised if we get a 401 from GitHub"
-        pass
-
-    class UnknownException(Exception):
-        "Raised if we get a response code we don't recognize from GitHub"
-        pass
-
-    # set up requests session with the github ssl cert
-    rsession = requests.session(verify=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                                    "api.github.com.crt"))
-
-    def __init__(self, token):
-        self.token = token
-
-    @classmethod
-    def get_token(cls, username, password):
-        auth_data = {
-            "scopes": ["gist"],
-            "note": "Sublime GitHub",
-            "note_url": "https://github.com/bgreenlee/sublime-github"
-        }
-        resp = cls.rsession.post("https://api.github.com/authorizations",
-                                 auth=(username, password),
-                                 data=json.dumps(auth_data))
-        if resp.status_code == 201:
-            data = json.loads(resp.text)
-            return data["token"]
-        elif resp.status_code == 401:
-            raise cls.UnauthorizedException()
-        else:
-            raise cls.UnknownException("%d %s" % (resp.status_code, resp.text))
-
-    def post(self, endpoint, data=None):
-        return self.request('post', endpoint, data=data)
-
-    def patch(self, endpoint, data=None):
-        return self.request('patch', endpoint, data=data)
-
-    def get(self, endpoint, params=None):
-        return self.request('get', endpoint, params=params)
-
-    def request(self, method, url, params=None, data=None):
-        if not url.startswith("http"):
-            url = self.BASE_URI + url
-        if data:
-            data = json.dumps(data)
-
-        headers = {"Authorization": "token %s" % self.token}
-        # add an etag to the header if we have one
-        if method == 'get' and url in self.etags:
-            headers["If-None-Match"] = self.etags[url]
-
-        resp = self.rsession.request(method, url,
-                                     headers=headers,
-                                     params=params,
-                                     data=data,
-                                     allow_redirects=True)
-        full_url = resp.url
-        if resp.status_code in [requests.codes.ok,
-                                requests.codes.created,
-                                requests.codes.found]:
-            if 'application/json' in resp.headers['content-type']:
-                resp_data = json.loads(resp.text)
-            else:
-                resp_data = resp.text
-            if method == 'get':  # cache the response
-                etag = resp.headers['etag']
-                self.etags[full_url] = etag
-                self.cache[etag] = resp_data
-            return resp_data
-        elif resp.status_code == requests.codes.not_modified:
-            return self.cache[resp.headers['etag']]
-        elif resp.status_code == requests.codes.unauthorized:
-            raise self.UnauthorizedException()
-        else:
-            raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
-
-    def create(self, description="", filename=None, content="", public=False):
-        if not filename:
-            return  # should be an error?
-
-        data = self.post("/gists", {"description": description,
-                                     "public": public,
-                                     "files": {filename: {"content": content}}})
-        return data["html_url"]
-
-    def update(self, gist, content):
-        filename = gist["files"].keys()[0]
-        resp = self.patch("/gists/" + gist["id"],
-                           {"description": gist["description"],
-                            "files": {filename: {"content": content}}})
-        return resp["html_url"]
-
-    def list(self, starred=False):
-        page = 1
-        data = []
-        # fetch all pages
-        while True:
-            endpoint = "/gists" + ("/starred" if starred else "")
-            page_data = self.get(endpoint, params={'page': page, 'per_page': self.PER_PAGE})
-            data.extend(page_data)
-            if len(page_data) < self.PER_PAGE:
-                break
-            page += 1
-        return data
-
-
-class BaseGistCommand(sublime_plugin.TextCommand):
+class BaseGitHubCommand(sublime_plugin.TextCommand):
     """
-    Base class for all Gist commands. Handles getting an auth token.
+    Base class for all GitHub commands. Handles getting an auth token.
     """
     MSG_USERNAME = "GitHub username:"
     MSG_PASSWORD = "GitHub password:"
@@ -167,7 +51,7 @@ class BaseGistCommand(sublime_plugin.TextCommand):
     def on_done_password(self, value):
         "Callback for the password show_input_panel"
         try:
-            self.github_token = GistApi.get_token(self.github_user, value)
+            self.github_token = GitHubApi.get_token(self.github_user, value)
             self.settings.set("github_token", self.github_token)
             sublime.save_settings("GitHub.sublime-settings")
             if self.callback:
@@ -175,14 +59,14 @@ class BaseGistCommand(sublime_plugin.TextCommand):
                 callback = self.callback
                 self.callback = None
                 sublime.set_timeout(callback, 50)
-        except GistApi.UnauthorizedException:
+        except GitHubApi.UnauthorizedException:
             sublime.error_message(self.ERR_UNAUTHORIZED)
             sublime.set_timeout(self.get_username, 50)
-        except GistApi.UnknownException, e:
+        except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
 
 
-class OpenGistCommand(BaseGistCommand):
+class OpenGistCommand(BaseGitHubCommand):
     """
     Open a gist.
     Defaults to all gists and copying it to the clipboard
@@ -201,15 +85,29 @@ class OpenGistCommand(BaseGistCommand):
             self.get_token()
 
     def get_gists(self):
-        self.gistapi = GistApi(self.github_token)
+        self.gistapi = GitHubApi(self.github_token)
         try:
-            self.gists = self.gistapi.list(starred=self.starred)
-            packed_gists = map(lambda g: ''.join([g["files"].keys()[0], ': ' if g["description"] else '', g["description"] or '']), self.gists)
-            self.view.window().show_quick_panel(packed_gists, self.on_done)
-        except GistApi.UnauthorizedException:
+            self.gists = self.gistapi.list_gists(starred=self.starred)
+            format = self.settings.get("gist_list_format")
+            packed_gists = []
+            for idx, gist in enumerate(self.gists):
+                attribs = {"index": idx + 1,
+                           "filename": gist["files"].keys()[0],
+                           "description": gist["description"] or ''}
+                if isinstance(format, basestring):
+                    item = format % attribs
+                else:
+                    item = [(format_str % attribs) for format_str in format]
+                packed_gists.append(item)
+
+            args = [packed_gists, self.on_done]
+            if self.settings.get("gist_list_monospace"):
+                args.append(sublime.MONOSPACE_FONT)
+            self.view.window().show_quick_panel(*args)
+        except GitHubApi.UnauthorizedException:
             sublime.error_message(self.ERR_UNAUTHORIZED)
             sublime.set_timeout(self.get_username, 50)
-        except GistApi.UnknownException, e:
+        except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
 
     def on_done(self, idx):
@@ -304,7 +202,7 @@ class OpenStarredGistInBrowserCommand(OpenGistInBrowserCommand):
     starred = True
 
 
-class GistFromSelectionCommand(BaseGistCommand):
+class GistFromSelectionCommand(BaseGitHubCommand):
     """
     Base class for creating a Github Gist from the current selection.
     """
@@ -345,21 +243,21 @@ class GistFromSelectionCommand(BaseGistCommand):
         else:
             text = "\n".join([self.view.substr(region) for region in self.view.sel()])
 
-        gistapi = GistApi(self.github_token)
+        gistapi = GitHubApi(self.github_token)
         try:
-            gist_url = gistapi.create(description=self.description,
-                                      filename=self.filename,
-                                      content=text,
-                                      public=self.public)
+            gist_url = gistapi.create_gist(description=self.description,
+                                           filename=self.filename,
+                                           content=text,
+                                           public=self.public)
             sublime.set_clipboard(gist_url)
             sublime.status_message(self.MSG_SUCCESS)
-        except GistApi.UnauthorizedException:
+        except GitHubApi.UnauthorizedException:
             # clear out the bad token so we can reset it
             self.settings.set("github_token", "")
             sublime.save_settings("GitHub.sublime-settings")
             sublime.error_message(self.ERR_UNAUTHORIZED)
             sublime.set_timeout(self.get_username, 50)
-        except GistApi.UnknownException, e:
+        except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
 
 
@@ -377,7 +275,7 @@ class PublicGistFromSelectionCommand(GistFromSelectionCommand):
     public = True
 
 
-class UpdateGistCommand(BaseGistCommand):
+class UpdateGistCommand(BaseGitHubCommand):
     MSG_SUCCESS = "Gist updated and url copied to the clipboard."
 
     def run(self, edit):
@@ -394,16 +292,16 @@ class UpdateGistCommand(BaseGistCommand):
 
     def update(self):
         text = self.view.substr(sublime.Region(0, self.view.size()))
-        gistapi = GistApi(self.github_token)
+        gistapi = GitHubApi(self.github_token)
         try:
-            gist_url = gistapi.update(self.gist, text)
+            gist_url = gistapi.update_gist(self.gist, text)
             sublime.set_clipboard(gist_url)
             sublime.status_message(self.MSG_SUCCESS)
-        except GistApi.UnauthorizedException:
+        except GitHubApi.UnauthorizedException:
             # clear out the bad token so we can reset it
             self.settings.set("github_token", "")
             sublime.save_settings("GitHub.sublime-settings")
             sublime.error_message(self.ERR_UNAUTHORIZED)
             sublime.set_timeout(self.get_username, 50)
-        except GistApi.UnknownException, e:
+        except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)

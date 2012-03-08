@@ -1,4 +1,19 @@
 /* Sublime GitHub default settings */
 {
-    "github_token": ""
+    "github_token": "",
+    // The format of the each line in the list of gists.
+    // The value is either a Python format string, or a list of Python format
+    // strings. In the latter case, each element of the list will be a separate
+    // line in the select list.
+    // Valid parameters:
+    //    filename - filename of [first file in] gist
+    //    description - description of gist
+    //    index - 1-based index of gist in the list
+    // 
+    // Some things to try:
+    // "gist_list_format": "%(index)d. %(filename)s: %(description)s",
+    // "gist_list_format": ["%(filename)s", "%(description)s"],
+    "gist_list_format": "%(filename)s: %(description)s",
+    // If true, display the list of gists in a monospace font
+    "gist_list_monospace": false
 }
