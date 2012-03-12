@@ -88,10 +88,7 @@ class GitHubApi(object):
         else:
             raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
 
-    def create_gist(self, description="", filename=None, content="", public=False):
-        if not filename:
-            return  # should be an error?
-
+    def create_gist(self, description="", filename="", content="", public=False):
         data = self.post("/gists", {"description": description,
                                      "public": public,
                                      "files": {filename: {"content": content}}})
