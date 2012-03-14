@@ -6,15 +6,13 @@ import requests
 from requests.status_codes import codes
 import httplib
 import commandline
+import sublime
 
 from StringIO import StringIO
 from httplib import HTTPResponse
 
 
 class CurlSession(object):
-    class CurlException(Exception):
-        pass
-
     class FakeSocket(StringIO):
         def makefile(self, *args, **kw):
             return self
@@ -45,8 +43,13 @@ class CurlSession(object):
         return response
 
     def request(self, method, url, headers=None, params=None, data=None, auth=None, allow_redirects=False, config=None):
-        curl = commandline.find_binary('curl')
-        curl_options = ['-i', '-L', '-f', '--user-agent', 'Sublime Github', '-s']
+        try:
+            curl = commandline.find_binary('curl')
+        except commandline.BinaryNotFoundError:
+            sublime.error_message("I couldn't find \"curl\" on your system. Curl is required on Linux. Please install it and try again.")
+            return
+
+        curl_options = ['-i', '-L', '--user-agent', 'Sublime Github', '-s']
         if auth:
             curl_options.extend(['--user', "%s:%s" % auth])
         if self.verify:
@@ -63,22 +66,9 @@ class CurlSession(object):
 
         command = [curl] + curl_options + [url]
 
-        try:
-            response = self._build_response(commandline.execute(command))
-            response.url = url
-            return response
-        except commandline.NonCleanExitError, e:
-            error_string = ''
-            if e.returncode == 22:
-                error_string = 'HTTP error 404'
-            elif e.returncode == 6:
-                error_string = 'URL error host not found'
-            else:
-                print "%s: Downloading %s timed out, trying again" % (__name__, url)
-
-            raise self.CurlException("%s: %s %s %s %s" % (__name__, e, error_string, method, url))
-
-        return False
+        response = self._build_response(commandline.execute(command))
+        response.url = url
+        return response
 
     def post(self, *args, **kwargs):
         return self.request("post", *args, **kwargs)

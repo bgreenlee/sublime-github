@@ -6,11 +6,11 @@
             "description": "Create and browse GitHub Gists",
             "author": "Brad Greenlee",
             "homepage": "http://github.com/bgreenlee/sublime-github",
-            "last_modified": "2012-03-12 16:00:00",
+            "last_modified": "2012-03-14 10:09:00",
             "platforms": {
                 "*": [
                     {
-                        "version": "2.1.3",
+                        "version": "2.1.4",
                         "url": "https://nodeload.github.com/bgreenlee/sublime-github/zipball/master"
                     }
                 ]

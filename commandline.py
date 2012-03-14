@@ -7,14 +7,6 @@ class BinaryNotFoundError(Exception):
     pass
 
 
-class NonCleanExitError(Exception):
-    def __init__(self, returncode):
-        self.returncode = returncode
-
-    def __str__(self):
-        return repr(self.returncode)
-
-
 def find_binary(name):
     dirs = ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin',
         '/sbin', '/bin']
@@ -32,7 +24,5 @@ def execute(args):
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     output = proc.stdout.read()
-    returncode = proc.wait()
-    if returncode != 0:
-        raise NonCleanExitError(returncode)
+    proc.wait()
     return output

@@ -26,6 +26,8 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
         "be stored; they are only used to generate an access token)."
     ERR_UNAUTHORIZED = "Your Github username or password appears to be incorrect. "\
         "Please try again."
+    ERR_UNAUTHORIZED_TOKEN = "Your Github token appears to be incorrect. Please re-enter your "\
+        "username and password to generate a new token."
 
     def run(self, edit):
         self.settings = sublime.load_settings("GitHub.sublime-settings")
@@ -105,7 +107,7 @@ class OpenGistCommand(BaseGitHubCommand):
                 args.append(sublime.MONOSPACE_FONT)
             self.view.window().show_quick_panel(*args)
         except GitHubApi.UnauthorizedException:
-            sublime.error_message(self.ERR_UNAUTHORIZED)
+            sublime.error_message(self.ERR_UNAUTHORIZED_TOKEN)
             sublime.set_timeout(self.get_username, 50)
         except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
@@ -255,7 +257,7 @@ class GistFromSelectionCommand(BaseGitHubCommand):
             # clear out the bad token so we can reset it
             self.settings.set("github_token", "")
             sublime.save_settings("GitHub.sublime-settings")
-            sublime.error_message(self.ERR_UNAUTHORIZED)
+            sublime.error_message(self.ERR_UNAUTHORIZED_TOKEN)
             sublime.set_timeout(self.get_username, 50)
         except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
@@ -301,7 +303,7 @@ class UpdateGistCommand(BaseGitHubCommand):
             # clear out the bad token so we can reset it
             self.settings.set("github_token", "")
             sublime.save_settings("GitHub.sublime-settings")
-            sublime.error_message(self.ERR_UNAUTHORIZED)
+            sublime.error_message(self.ERR_UNAUTHORIZED_TOKEN)
             sublime.set_timeout(self.get_username, 50)
         except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
