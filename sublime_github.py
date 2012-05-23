@@ -33,6 +33,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
         self.settings = sublime.load_settings("GitHub.sublime-settings")
         self.github_user = None
         self.github_token = self.settings.get('github_token')
+        self.debug = self.settings.get('debug')
 
     def get_token(self):
         sublime.error_message(self.ERR_NO_USER_TOKEN)
@@ -53,7 +54,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
     def on_done_password(self, value):
         "Callback for the password show_input_panel"
         try:
-            self.github_token = GitHubApi.get_token(self.github_user, value)
+            self.github_token = GitHubApi(debug=self.debug).get_token(self.github_user, value)
             self.settings.set("github_token", self.github_token)
             sublime.save_settings("GitHub.sublime-settings")
             if self.callback:
@@ -87,7 +88,7 @@ class OpenGistCommand(BaseGitHubCommand):
             self.get_token()
 
     def get_gists(self):
-        self.gistapi = GitHubApi(self.github_token)
+        self.gistapi = GitHubApi(self.github_token, debug=self.debug)
         try:
             self.gists = self.gistapi.list_gists(starred=self.starred)
             format = self.settings.get("gist_list_format")
@@ -245,7 +246,7 @@ class GistFromSelectionCommand(BaseGitHubCommand):
         else:
             text = "\n".join([self.view.substr(region) for region in self.view.sel()])
 
-        gistapi = GitHubApi(self.github_token)
+        gistapi = GitHubApi(self.github_token, debug=self.debug)
         try:
             gist_url = gistapi.create_gist(description=self.description,
                                            filename=self.filename,
@@ -294,7 +295,7 @@ class UpdateGistCommand(BaseGitHubCommand):
 
     def update(self):
         text = self.view.substr(sublime.Region(0, self.view.size()))
-        gistapi = GitHubApi(self.github_token)
+        gistapi = GitHubApi(self.github_token, debug=self.debug)
         try:
             gist_url = gistapi.update_gist(self.gist, text)
             sublime.set_clipboard(gist_url)

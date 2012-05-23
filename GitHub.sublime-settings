@@ -15,5 +15,7 @@
     // "gist_list_format": ["%(filename)s", "%(description)s"],
     "gist_list_format": "%(filename)s: %(description)s",
     // If true, display the list of gists in a monospace font
-    "gist_list_monospace": false
+    "gist_list_monospace": false,
+    // output debug info to the console
+    "debug": false
 }

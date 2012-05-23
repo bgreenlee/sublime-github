@@ -1,6 +1,11 @@
 import os.path
 import json
 import sublime_requests as requests
+import sys
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s')
+logger = logging.getLogger()
 
 
 class GitHubApi(object):
@@ -18,30 +23,36 @@ class GitHubApi(object):
         "Raised if we get a response code we don't recognize from GitHub"
         pass
 
-    # set up requests session with the github ssl cert
-    rsession = requests.session(verify=os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                                    "api.github.com.crt"))
-
-    def __init__(self, token):
+    def __init__(self, token=None, debug=False):
         self.token = token
+        self.debug = debug
+        if debug:
+            logger.setLevel(logging.DEBUG)
 
-    @classmethod
-    def get_token(cls, username, password):
+        # set up requests session with the github ssl cert, if found
+        cert_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "api.github.com.crt")
+        if not os.path.isfile(cert_path):
+            logger.warning("GitHub SSL cert not found at %s! Not verifying requests." % cert_path)
+            cert_path = None
+        self.rsession = requests.session(verify=cert_path,
+                                         config={'verbose': sys.stderr if self.debug else None})
+
+    def get_token(self, username, password):
         auth_data = {
             "scopes": ["gist"],
             "note": "Sublime GitHub",
             "note_url": "https://github.com/bgreenlee/sublime-github"
         }
-        resp = cls.rsession.post("https://api.github.com/authorizations",
-                                 auth=(username, password),
-                                 data=json.dumps(auth_data))
+        resp = self.rsession.post("https://api.github.com/authorizations",
+                                  auth=(username, password),
+                                  data=json.dumps(auth_data))
         if resp.status_code == 201:
             data = json.loads(resp.text)
             return data["token"]
         elif resp.status_code == 401:
-            raise cls.UnauthorizedException()
+            raise self.UnauthorizedException()
         else:
-            raise cls.UnknownException("%d %s" % (resp.status_code, resp.text))
+            raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
 
     def post(self, endpoint, data=None):
         return self.request('post', endpoint, data=data)
@@ -68,6 +79,7 @@ class GitHubApi(object):
                                      params=params,
                                      data=data,
                                      allow_redirects=True)
+        logger.debug("response headers: %s" % resp.headers)
         full_url = resp.url
         if resp.status_code in [requests.codes.ok,
                                 requests.codes.created,
