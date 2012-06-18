@@ -78,6 +78,7 @@ class OpenGistCommand(BaseGitHubCommand):
     starred = False
     open_in_editor = False
     syntax_file_map = None
+    copy_gist_id = False
 
     def run(self, edit):
         super(OpenGistCommand, self).run(edit)
@@ -139,6 +140,8 @@ class OpenGistCommand(BaseGitHubCommand):
             new_view.end_edit(edit)
             new_view.set_name(filename)
             new_view.settings().set('gist', gist)
+        elif self.copy_gist_id:
+            sublime.set_clipboard(gist["html_url"])
         else:
             sublime.set_clipboard(content)
             sublime.status_message(self.MSG_SUCCESS % filename)
@@ -178,6 +181,11 @@ class OpenGistInEditorCommand(OpenGistCommand):
     """
     open_in_editor = True
 
+class OpenGistUrlCommand(OpenGistCommand):
+    """
+    Open a gist url in a new editor.
+    """
+    copy_gist_id = True
 
 class OpenStarredGistInEditorCommand(OpenGistCommand):
     """
