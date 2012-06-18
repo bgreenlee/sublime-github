@@ -5,6 +5,7 @@
     { "caption": "GitHub: Copy Starred Gist to Clipboard", "command": "open_starred_gist" },
     { "caption": "GitHub: Open Gist in Editor", "command": "open_gist_in_editor" },
     { "caption": "GitHub: Open Starred Gist in Editor", "command": "open_starred_gist_in_editor" },
+    { "caption": "GitHub: Copy Gist URL to Clipboard", "command": "open_gist_url" },
     { "caption": "GitHub: Open Gist in Browser", "command": "open_gist_in_browser" },
     { "caption": "GitHub: Open Starred Gist in Browser", "command": "open_starred_gist_in_browser" },
     { "caption": "GitHub: Update Gist", "command": "update_gist" }
