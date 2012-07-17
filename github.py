@@ -54,22 +54,26 @@ class GitHubApi(object):
         else:
             raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
 
-    def post(self, endpoint, data=None):
-        return self.request('post', endpoint, data=data)
+    def post(self, endpoint, data=None, content_type='application/json'):
+        return self.request('post', endpoint, data=data, content_type=content_type)
 
-    def patch(self, endpoint, data=None):
-        return self.request('patch', endpoint, data=data)
+    def patch(self, endpoint, data=None, content_type='application/json'):
+        return self.request('patch', endpoint, data=data, content_type=content_type)
 
     def get(self, endpoint, params=None):
         return self.request('get', endpoint, params=params)
 
-    def request(self, method, url, params=None, data=None):
+    def request(self, method, url, params=None, data=None, content_type=None):
         if not url.startswith("http"):
             url = self.BASE_URI + url
         if data:
             data = json.dumps(data)
 
         headers = {"Authorization": "token %s" % self.token}
+
+        if content_type:
+            headers["Content-Type"]=content_type
+
         # add an etag to the header if we have one
         if method == 'get' and url in self.etags:
             headers["If-None-Match"] = self.etags[url]
