@@ -68,7 +68,7 @@ The following commands are available in the Command Palette:
     Displays a quick select panel listing all of your gists, and selecting one will
     open that gist in your default web browser.
 
-* **GitHub: Open Starred Gist in Editor**
+* **GitHub: Open Starred Gist in Browser**
 
     Displays a quick select panel listing only your starred gists, and selecting one will
     open that gist in your default web browser.
