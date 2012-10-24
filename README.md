@@ -77,6 +77,39 @@ The following commands are available in the Command Palette:
 
     Update the gist open in the current editor.
 
+* **GitHub: Switch Accounts**
+
+    Switch to another GitHub account (see Adding Additional Accounts below)
+
+## Adding Additional Accounts
+
+If have multiple GitHub accounts, or have a private GitHub installation, you can add the other
+accounts and switch between them whenever you like.
+
+Go to the GitHub user settings file (Preferences -> Package Settings -> GitHub -> Settings - User),
+and add another entry to the `accounts` dictionary. If it is another GitHub account, copy the
+`base_uri` for the default GitHub entry (if you don't see it, you can get it from Preferences ->
+Package Settings -> GitHub -> Settings - Default, or in the example below), and just give the
+account a different name. If you're adding a private GitHub installation, the `base_uri` will be
+whatever the base url is for your private GitHub, plus "/api/v3". For example:
+
+    "accounts":
+    {
+        "GitHub":
+        {
+            "base_uri": "https://api.github.com",
+            "github_token": "..."
+        },
+        "YourCo":
+        {
+            "base_uri": "https://github.yourco.com/api/v3",
+            "github_token": ""
+        },
+
+    }
+
+Don't worry about setting the `github_token`--that will be set for you automatically, after you
+switch accounts (Shift-Cmd-P, "GitHub: Switch Accounts").
 
 ## Issues
 

@@ -1,3 +1,4 @@
+import sublime
 import os.path
 import json
 import sublime_requests as requests
@@ -10,7 +11,6 @@ logger = logging.getLogger()
 
 class GitHubApi(object):
     "Encapsulates the GitHub API"
-    BASE_URI = "https://api.github.com"
     PER_PAGE = 100
     etags = {}
     cache = {}
@@ -23,14 +23,15 @@ class GitHubApi(object):
         "Raised if we get a response code we don't recognize from GitHub"
         pass
 
-    def __init__(self, token=None, debug=False):
+    def __init__(self, base_uri="https://api.github.com", token=None, debug=False):
+        self.base_uri = base_uri
         self.token = token
         self.debug = debug
         if debug:
             logger.setLevel(logging.DEBUG)
 
         # set up requests session with the github ssl cert, if found
-        cert_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "api.github.com.crt")
+        cert_path = os.path.join(sublime.packages_path(), "sublime-github", "api.github.com.crt")
         if not os.path.isfile(cert_path):
             logger.warning("GitHub SSL cert not found at %s! Not verifying requests." % cert_path)
             cert_path = None
@@ -43,7 +44,7 @@ class GitHubApi(object):
             "note": "Sublime GitHub",
             "note_url": "https://github.com/bgreenlee/sublime-github"
         }
-        resp = self.rsession.post("https://api.github.com/authorizations",
+        resp = self.rsession.post(self.base_uri + "/authorizations",
                                   auth=(username, password),
                                   data=json.dumps(auth_data))
         if resp.status_code == 201:
@@ -65,7 +66,7 @@ class GitHubApi(object):
 
     def request(self, method, url, params=None, data=None, content_type=None):
         if not url.startswith("http"):
-            url = self.BASE_URI + url
+            url = self.base_uri + url
         if data:
             data = json.dumps(data)
 
@@ -77,13 +78,11 @@ class GitHubApi(object):
         # add an etag to the header if we have one
         if method == 'get' and url in self.etags:
             headers["If-None-Match"] = self.etags[url]
-
         resp = self.rsession.request(method, url,
                                      headers=headers,
                                      params=params,
                                      data=data,
                                      allow_redirects=True)
-        logger.debug("response headers: %s" % resp.headers)
         full_url = resp.url
         if resp.status_code in [requests.codes.ok,
                                 requests.codes.created,

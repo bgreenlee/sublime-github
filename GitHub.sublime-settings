@@ -1,6 +1,22 @@
 /* Sublime GitHub default settings */
 {
-    "github_token": "",
+    "accounts": {
+        "GitHub": {
+            "base_uri": "https://api.github.com",
+            "github_token": ""
+        }
+    },
+
+    // You can add support for a private GitHub installation by adding another entry
+    // to the accounts entry in the User settings file (Preferences -> 
+    // Package Settings -> GitHub -> Settings - User). You can then switch between
+    // accounts via the GitHub: Switch Accounts command
+    //
+    // "YourCo": {
+    //     "base_uri": "https://github.yourco.com/api/v3",
+    //     "github_token": ""
+    // }
+
     // The format of the each line in the list of gists.
     // The value is either a Python format string, or a list of Python format
     // strings. In the latter case, each element of the list will be a separate
