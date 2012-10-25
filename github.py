@@ -47,10 +47,10 @@ class GitHubApi(object):
         resp = self.rsession.post(self.base_uri + "/authorizations",
                                   auth=(username, password),
                                   data=json.dumps(auth_data))
-        if resp.status_code == 201:
+        if resp.status_code == requests.codes.CREATED:
             data = json.loads(resp.text)
             return data["token"]
-        elif resp.status_code == 401:
+        elif resp.status_code == requests.codes.UNAUTHORIZED:
             raise self.UnauthorizedException()
         else:
             raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
@@ -73,20 +73,23 @@ class GitHubApi(object):
         headers = {"Authorization": "token %s" % self.token}
 
         if content_type:
-            headers["Content-Type"]=content_type
+            headers["Content-Type"] = content_type
 
         # add an etag to the header if we have one
         if method == 'get' and url in self.etags:
             headers["If-None-Match"] = self.etags[url]
+        logger.debug("request: %s %s %s %s" % (method, url, headers, params))
         resp = self.rsession.request(method, url,
                                      headers=headers,
                                      params=params,
                                      data=data,
                                      allow_redirects=True)
         full_url = resp.url
-        if resp.status_code in [requests.codes.ok,
-                                requests.codes.created,
-                                requests.codes.found]:
+        logger.debug("response: %s" % resp.headers)
+        if resp.status_code in [requests.codes.OK,
+                                requests.codes.CREATED,
+                                requests.codes.FOUND,
+                                requests.codes.CONTINUE]:
             if 'application/json' in resp.headers['content-type']:
                 resp_data = json.loads(resp.text)
             else:
@@ -96,9 +99,9 @@ class GitHubApi(object):
                 self.etags[full_url] = etag
                 self.cache[etag] = resp_data
             return resp_data
-        elif resp.status_code == requests.codes.not_modified:
+        elif resp.status_code == requests.codes.NOT_MODIFIED:
             return self.cache[resp.headers['etag']]
-        elif resp.status_code == requests.codes.unauthorized:
+        elif resp.status_code == requests.codes.UNAUTHORIZED:
             raise self.UnauthorizedException()
         else:
             raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
