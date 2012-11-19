@@ -9,5 +9,7 @@
     { "caption": "GitHub: Open Gist in Browser", "command": "open_gist_in_browser" },
     { "caption": "GitHub: Open Starred Gist in Browser", "command": "open_starred_gist_in_browser" },
     { "caption": "GitHub: Update Gist", "command": "update_gist" },
-    { "caption": "GitHub: Switch Accounts", "command": "switch_accounts" }
+    { "caption": "GitHub: Switch Accounts", "command": "switch_accounts" },
+    { "caption": "GitHub: Copy Remote URL to Clipboard", "command": "copy_remote_url" },
+    { "caption": "GitHub: Open Remote URL in Browser", "command": "open_remote_url" }
 ]

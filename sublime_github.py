@@ -1,5 +1,7 @@
 import os
+import sys
 import os.path
+import re
 import sublime
 import sublime_plugin
 import webbrowser
@@ -10,6 +12,14 @@ try:
     import xml.parsers.expat as expat
 except ImportError:
     expat = None
+
+try:
+    sys.path.append(os.path.join(sublime.packages_path(), 'Git'))
+    git = __import__("git")
+    sys.path.remove(os.path.join(sublime.packages_path(), 'Git'))
+except ImportError:
+    git = None
+
 
 logger.basicConfig(format='[sublime-github] %(levelname)s: %(message)s')
 
@@ -167,6 +177,9 @@ class OpenGistCommand(BaseGitHubCommand):
 
     @staticmethod
     def _generate_syntax_file_map():
+        """
+        Generate a map of all file types to their syntax files.
+        """
         syntax_file_map = {}
         packages_path = sublime.packages_path()
         packages = [f for f in os.listdir(packages_path) if os.path.isdir(os.path.join(packages_path, f))]
@@ -200,11 +213,13 @@ class OpenGistInEditorCommand(OpenGistCommand):
     """
     open_in_editor = True
 
+
 class OpenGistUrlCommand(OpenGistCommand):
     """
     Open a gist url in a new editor.
     """
     copy_gist_id = True
+
 
 class OpenStarredGistInEditorCommand(OpenGistCommand):
     """
@@ -352,3 +367,46 @@ class SwitchAccountsCommand(BaseGitHubCommand):
             sublime.save_settings("GitHub.sublime-settings")
             self.base_uri = self.accounts[self.active_account]["base_uri"]
             self.github_token = self.accounts[self.active_account]["github_token"]
+
+
+class RemoteUrlCommand(git.GitTextCommand):
+    def run(self, edit):
+        if not git:
+            sublime.error_message("I couldn't find the Git plugin. Please install it and try again.")
+            return
+        self.run_command("git remote -v".split(), self.done_remote)
+
+    def done_remote(self, result):
+        remote_origin = [r for r in result.split("\n") if "origin" in r][0]
+        remote_loc = re.split('\s+', remote_origin)[1]
+        repo_url = re.sub('^git@', 'https://', remote_loc)
+        repo_url = re.sub('\.com:', '.com/', repo_url)
+        repo_url = re.sub('\.git$', '', repo_url)
+        self.repo_url = repo_url
+        self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
+
+    def done_rev_parse(self, result):
+        # get current branch
+        current_branch = result.strip()
+        # get file path within repo
+        repo_name = self.repo_url.split("/").pop()
+        relative_path = self.view.file_name().split(repo_name).pop()
+        self.url = "%s/blob/%s%s" % (self.repo_url, current_branch, relative_path)
+        self.on_done()
+
+
+class OpenRemoteUrlCommand(RemoteUrlCommand):
+    def run(self, edit):
+        super(OpenRemoteUrlCommand, self).run(edit)
+
+    def on_done(self):
+        webbrowser.open(self.url)
+
+
+class CopyRemoteUrlCommand(RemoteUrlCommand):
+    def run(self, edit):
+        super(CopyRemoteUrlCommand, self).run(edit)
+
+    def on_done(self):
+        sublime.set_clipboard(self.url)
+        sublime.status_message("Remote URL copied to clipboard")

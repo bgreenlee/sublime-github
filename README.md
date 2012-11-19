@@ -81,6 +81,14 @@ The following commands are available in the Command Palette:
 
     Switch to another GitHub account (see Adding Additional Accounts below)
 
+* **GitHub: Open Remote URL in Browser**
+
+    Open the current file's location in the repository in the browser.
+
+* **GitHub: Copy Remote URL to Clipboard**
+
+    Put the url of the current file's location in the repository into the clipboard.
+
 ## Adding Additional Accounts
 
 If have multiple GitHub accounts, or have a private GitHub installation, you can add the other
