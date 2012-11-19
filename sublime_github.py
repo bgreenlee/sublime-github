@@ -288,13 +288,13 @@ class GistFromSelectionCommand(BaseGitHubCommand):
         else:
             text = "\n".join([self.view.substr(region) for region in self.view.sel()])
 
-        # gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug)
         try:
-            gist_url = self.gistapi.create_gist(description=self.description,
+            gist = self.gistapi.create_gist(description=self.description,
                                            filename=self.filename,
                                            content=text,
                                            public=self.public)
-            sublime.set_clipboard(gist_url)
+            self.view.settings().set('gist', gist)
+            sublime.set_clipboard(gist["html_url"])
             sublime.status_message(self.MSG_SUCCESS)
         except GitHubApi.UnauthorizedException:
             # clear out the bad token so we can reset it
@@ -337,10 +337,9 @@ class UpdateGistCommand(BaseGitHubCommand):
 
     def update(self):
         text = self.view.substr(sublime.Region(0, self.view.size()))
-        # gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug)
         try:
-            gist_url = self.gistapi.update_gist(self.gist, text)
-            sublime.set_clipboard(gist_url)
+            updated_gist = self.gistapi.update_gist(self.gist, text)
+            sublime.set_clipboard(updated_gist["html_url"])
             sublime.status_message(self.MSG_SUCCESS)
         except GitHubApi.UnauthorizedException:
             # clear out the bad token so we can reset it

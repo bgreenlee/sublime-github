@@ -107,17 +107,15 @@ class GitHubApi(object):
             raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
 
     def create_gist(self, description="", filename="", content="", public=False):
-        data = self.post("/gists", {"description": description,
-                                     "public": public,
-                                     "files": {filename: {"content": content}}})
-        return data["html_url"]
+        return self.post("/gists", {"description": description,
+                                    "public": public,
+                                    "files": {filename: {"content": content}}})
 
     def update_gist(self, gist, content):
         filename = gist["files"].keys()[0]
-        resp = self.patch("/gists/" + gist["id"],
-                           {"description": gist["description"],
-                            "files": {filename: {"content": content}}})
-        return resp["html_url"]
+        return self.patch("/gists/" + gist["id"],
+                         {"description": gist["description"],
+                          "files": {filename: {"content": content}}})
 
     def list_gists(self, starred=False):
         page = 1
