@@ -30,10 +30,10 @@ class GitHubApi(object):
         if debug:
             logger.setLevel(logging.DEBUG)
 
-        # set up requests session with the github ssl cert, if found
-        cert_path = os.path.join(sublime.packages_path(), "sublime-github", "api.github.com.crt")
+        # set up requests session with the root CA cert bundle
+        cert_path = os.path.join(sublime.packages_path(), "sublime-github", "ca-bundle.crt")
         if not os.path.isfile(cert_path):
-            logger.warning("GitHub SSL cert not found at %s! Not verifying requests." % cert_path)
+            logger.warning("Root CA cert bundle not found at %s! Not verifying requests." % cert_path)
             cert_path = None
         self.rsession = requests.session(verify=cert_path,
                                          config={'verbose': sys.stderr if self.debug else None})
