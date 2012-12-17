@@ -83,11 +83,15 @@ The following commands are available in the Command Palette:
 
 * **GitHub: Open Remote URL in Browser**
 
-    Open the current file's location in the repository in the browser.
+    Open the current file's location in the repository in the browser. *Note:* Requires
+    the Git plugin, available through the Package Manager. After installing, restart
+    Sublime Text.
 
 * **GitHub: Copy Remote URL to Clipboard**
 
     Put the url of the current file's location in the repository into the clipboard.
+    *Note:* Requires the Git plugin, available through the Package Manager. After
+    installing, restart Sublime Text.
 
 ## Adding Additional Accounts
 

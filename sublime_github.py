@@ -367,31 +367,32 @@ class SwitchAccountsCommand(BaseGitHubCommand):
             self.base_uri = self.accounts[self.active_account]["base_uri"]
             self.github_token = self.accounts[self.active_account]["github_token"]
 
+if git:
+    class RemoteUrlCommand(git.GitTextCommand):
+        def run(self, edit):
+            self.run_command("git remote -v".split(), self.done_remote)
 
-class RemoteUrlCommand(git.GitTextCommand):
-    def run(self, edit):
-        if not git:
-            sublime.error_message("I couldn't find the Git plugin. Please install it and try again.")
-            return
-        self.run_command("git remote -v".split(), self.done_remote)
+        def done_remote(self, result):
+            remote_origin = [r for r in result.split("\n") if "origin" in r][0]
+            remote_loc = re.split('\s+', remote_origin)[1]
+            repo_url = re.sub('^git@', 'https://', remote_loc)
+            repo_url = re.sub('\.com:', '.com/', repo_url)
+            repo_url = re.sub('\.git$', '', repo_url)
+            self.repo_url = repo_url
+            self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
 
-    def done_remote(self, result):
-        remote_origin = [r for r in result.split("\n") if "origin" in r][0]
-        remote_loc = re.split('\s+', remote_origin)[1]
-        repo_url = re.sub('^git@', 'https://', remote_loc)
-        repo_url = re.sub('\.com:', '.com/', repo_url)
-        repo_url = re.sub('\.git$', '', repo_url)
-        self.repo_url = repo_url
-        self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
-
-    def done_rev_parse(self, result):
-        # get current branch
-        current_branch = result.strip()
-        # get file path within repo
-        repo_name = self.repo_url.split("/").pop()
-        relative_path = self.view.file_name().split(repo_name).pop()
-        self.url = "%s/blob/%s%s" % (self.repo_url, current_branch, relative_path)
-        self.on_done()
+        def done_rev_parse(self, result):
+            # get current branch
+            current_branch = result.strip()
+            # get file path within repo
+            repo_name = self.repo_url.split("/").pop()
+            relative_path = self.view.file_name().split(repo_name).pop()
+            self.url = "%s/blob/%s%s" % (self.repo_url, current_branch, relative_path)
+            self.on_done()
+else:
+    class RemoteUrlCommand(sublime_plugin.TextCommand):
+        def run(self, edit):
+            sublime.error_message("I couldn't find the Git plugin. Please install it, restart Sublime Text, and try again.")
 
 
 class OpenRemoteUrlCommand(RemoteUrlCommand):
