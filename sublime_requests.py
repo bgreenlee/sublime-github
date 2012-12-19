@@ -7,9 +7,12 @@ from requests.status_codes import codes
 import httplib
 import commandline
 import sublime
-
 from StringIO import StringIO
 from httplib import HTTPResponse
+import logging
+
+logging.basicConfig(format='%(asctime)s %(message)s')
+logger = logging.getLogger()
 
 
 class CurlSession(object):
@@ -28,6 +31,13 @@ class CurlSession(object):
                 raise Exception("Unrecognized response: %s" % text)
             else:
                 text = m.group(1)
+        # remove Transfer-Encoding: chunked header, as it causes reading the response to fail
+        # first do a quick check for it, so we can avoid doing the expensive negative-lookbehind
+        # regex if we don't need it
+        if "Transfer-Encoding: chunked" in text:
+            # we do the negative-lookbehind to make sure we only strip the Transfer-Encoding
+            # string in the header
+            text = re.sub(r'(?<!\r\n\r\n).*?Transfer-Encoding: chunked\r\n', '', text, count=1)
         socket = self.FakeSocket(text)
         response = HTTPResponse(socket)
         response.begin()
