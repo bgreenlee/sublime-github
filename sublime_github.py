@@ -387,7 +387,19 @@ if git:
             # get file path within repo
             repo_name = self.repo_url.split("/").pop()
             relative_path = self.view.file_name().split(repo_name).pop()
-            self.url = "%s/blob/%s%s" % (self.repo_url, current_branch, relative_path)
+            # if any lines are selected, the first of those
+            non_empty_regions = [region for region in self.view.sel() if not region.empty()]
+            if non_empty_regions:
+                selection = non_empty_regions[0]
+                (start_row, _) = self.view.rowcol(selection.begin())
+                (end_row, _) = self.view.rowcol(selection.end())
+                line_nums = "#L%s" % (start_row + 1)
+                if end_row > start_row:
+                    line_nums += "-L%s" % (end_row + 1)
+            else:
+                line_nums = ""
+
+            self.url = "%s/blob/%s%s%s" % (self.repo_url, current_branch, relative_path, line_nums)
             self.on_done()
 else:
     class RemoteUrlCommand(sublime_plugin.TextCommand):
