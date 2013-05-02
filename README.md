@@ -1,7 +1,8 @@
 # Sublime GitHub
 
 This is a plugin for the [Sublime Text 2](http://www.sublimetext.com/) text
-editor that allows you to create and browse your [GitHub Gists](http://gist.github.com).
+editor that provides a number of useful commands for GitHub, including creating and browsing gists,
+opening and editing files on GitHub, and bringing up the blame and commit history views.
 
 ## Installation
 
