@@ -81,7 +81,7 @@ The following commands are available in the Command Palette:
 
     Update the gist open in the current editor.
 
-* **The following commands require the Git plugin, available through the Package Manager. After installing, restart Sublime Text.**
+**The following commands require the Git plugin, available through the Package Manager. After installing, restart Sublime Text.**
 
 * **GitHub: Open Remote URL in Browser**
 
