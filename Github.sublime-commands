@@ -11,5 +11,7 @@
     { "caption": "GitHub: Update Gist", "command": "update_gist" },
     { "caption": "GitHub: Switch Accounts", "command": "switch_accounts" },
     { "caption": "GitHub: Copy Remote URL to Clipboard", "command": "copy_remote_url" },
-    { "caption": "GitHub: Open Remote URL in Browser", "command": "open_remote_url" }
+    { "caption": "GitHub: Open Remote URL in Browser", "command": "open_remote_url" },
+    { "caption": "GitHub: Blame", "command": "blame"},
+    { "caption": "GitHub: History", "command": "history"}
 ]

@@ -77,21 +77,29 @@ The following commands are available in the Command Palette:
 
     Update the gist open in the current editor.
 
-* **GitHub: Switch Accounts**
-
-    Switch to another GitHub account (see Adding Additional Accounts below)
-
 * **GitHub: Open Remote URL in Browser**
 
-    Open the current file's location in the repository in the browser. *Note:* Requires
-    the Git plugin, available through the Package Manager. After installing, restart
-    Sublime Text.
+    Open the current file's location in the repository in the browser.
+    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
 
 * **GitHub: Copy Remote URL to Clipboard**
 
     Put the url of the current file's location in the repository into the clipboard.
-    *Note:* Requires the Git plugin, available through the Package Manager. After
-    installing, restart Sublime Text.
+    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
+
+* **GitHub: Blame**
+
+    Open the GitHub blame view of the current file in the browser
+    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
+
+* **GitHub: History**
+
+    Open the GitHub commit history view of the current file in the browser.
+    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
+
+* **GitHub: Switch Accounts**
+
+    Switch to another GitHub account (see Adding Additional Accounts below)
 
 ## Adding Additional Accounts
 
