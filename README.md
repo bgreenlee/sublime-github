@@ -33,6 +33,10 @@ the "Generating Your Own Access Token" section below.
 
 The following commands are available in the Command Palette:
 
+* **GitHub: Switch Accounts**
+
+    Switch to another GitHub account (see Adding Additional Accounts below)
+
 * **GitHub: Private Gist from Selection**
 
 	Create a private gist from the currently selected text (or, if nothing is selected,
@@ -77,29 +81,27 @@ The following commands are available in the Command Palette:
 
     Update the gist open in the current editor.
 
+* **The following commands require the Git plugin, available through the Package Manager. After installing, restart Sublime Text.**
+
 * **GitHub: Open Remote URL in Browser**
 
     Open the current file's location in the repository in the browser.
-    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
 
 * **GitHub: Copy Remote URL to Clipboard**
 
     Put the url of the current file's location in the repository into the clipboard.
-    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
 
 * **GitHub: Blame**
 
     Open the GitHub blame view of the current file in the browser
-    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
 
 * **GitHub: History**
 
     Open the GitHub commit history view of the current file in the browser.
-    *Note:* Requires the Git plugin, available through the Package Manager. After installing, restart Sublime Text.
 
-* **GitHub: Switch Accounts**
+* **GitHub: Edit**
 
-    Switch to another GitHub account (see Adding Additional Accounts below)
+    Open the current file for editing on GitHub. I'm not sure why you'd want to do that, but it was easy enough to add.
 
 ## Adding Additional Accounts
 

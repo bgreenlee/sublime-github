@@ -389,17 +389,17 @@ if git:
             # get file path within repo
             repo_name = self.repo_url.split("/").pop()
             relative_path = self.view.file_name().split(repo_name).pop()
-            # if any lines are selected, the first of those
-            non_empty_regions = [region for region in self.view.sel() if not region.empty()]
-            if non_empty_regions:
-                selection = non_empty_regions[0]
-                (start_row, _) = self.view.rowcol(selection.begin())
-                (end_row, _) = self.view.rowcol(selection.end())
-                line_nums = "#L%s" % (start_row + 1)
-                if end_row > start_row:
-                    line_nums += "-L%s" % (end_row + 1)
-            else:
-                line_nums = ""
+            line_nums = ""
+            if self.allows_line_highlights:
+                # if any lines are selected, the first of those
+                non_empty_regions = [region for region in self.view.sel() if not region.empty()]
+                if non_empty_regions:
+                    selection = non_empty_regions[0]
+                    (start_row, _) = self.view.rowcol(selection.begin())
+                    (end_row, _) = self.view.rowcol(selection.end())
+                    line_nums = "#L%s" % (start_row + 1)
+                    if end_row > start_row:
+                        line_nums += "-L%s" % (end_row + 1)
 
             self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, current_branch, relative_path, line_nums)
             self.on_done()
@@ -410,6 +410,8 @@ else:
 
 
 class OpenRemoteUrlCommand(RemoteUrlCommand):
+    allows_line_highlights = True
+
     def run(self, edit):
         super(OpenRemoteUrlCommand, self).run(edit)
 
@@ -432,3 +434,9 @@ class BlameCommand(OpenRemoteUrlCommand):
 
 class HistoryCommand(OpenRemoteUrlCommand):
     url_type = 'commits'
+    allows_line_highlights = False
+
+
+class EditCommand(OpenRemoteUrlCommand):
+    url_type = 'edit'
+    allows_line_highlights = False

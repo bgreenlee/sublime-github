@@ -13,5 +13,6 @@
     { "caption": "GitHub: Copy Remote URL to Clipboard", "command": "copy_remote_url" },
     { "caption": "GitHub: Open Remote URL in Browser", "command": "open_remote_url" },
     { "caption": "GitHub: Blame", "command": "blame"},
-    { "caption": "GitHub: History", "command": "history"}
+    { "caption": "GitHub: History", "command": "history"},
+    { "caption": "GitHub: Edit", "command": "edit"}
 ]
