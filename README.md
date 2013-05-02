@@ -141,7 +141,7 @@ switch accounts (Shift-Cmd-P, "GitHub: Switch Accounts").
 
 * Depending on the number of gists you have, there can be a considerable delay the first time
 your list of gists is fetched. Subsequent requests will be cached and should be a bit faster
-(although the GitHub API's ETags are currently not correct; once that fix that, it should speed
+(although the GitHub API's ETags are currently not correct; once they fix that, it should speed
 things up). In the meantime, if there are gists that you open frequently, open them on GitHub and
 "Star" them, then access them via the Open/Copy Starred Gist commands.
 
