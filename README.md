@@ -127,8 +127,7 @@ whatever the base url is for your private GitHub, plus "/api/v3". For example:
         {
             "base_uri": "https://github.yourco.com/api/v3",
             "github_token": ""
-        },
-
+        }
     }
 
 Don't worry about setting the `github_token`--that will be set for you automatically, after you
