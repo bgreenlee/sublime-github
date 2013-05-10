@@ -388,7 +388,7 @@ if git:
             current_branch = result.strip()
             # get file path within repo
             repo_name = self.repo_url.split("/").pop()
-            relative_path = self.view.file_name().split(repo_name).pop()
+            relative_path = self.view.file_name().split(repo_name, 1).pop()
             line_nums = ""
             if self.allows_line_highlights:
                 # if any lines are selected, the first of those
