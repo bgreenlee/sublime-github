@@ -58,7 +58,9 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
                 sublime.save_settings("GitHub.sublime-settings")
         self.base_uri = self.accounts[self.active_account]["base_uri"]
         self.debug = self.settings.get('debug')
-        self.gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug)
+
+        self.proxies = {'https': self.accounts[self.active_account].get("https_proxy", None)}
+        self.gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug, proxies=self.proxies)
 
     def get_token(self):
         sublime.error_message(self.ERR_NO_USER_TOKEN)
@@ -304,7 +306,8 @@ class GistFromSelectionCommand(BaseGitHubCommand):
             sublime.set_timeout(self.get_username, 50)
         except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
-
+        except GitHubApi.ConnectionException, e:
+            sublime.error_message(e.message)
 
 class PrivateGistFromSelectionCommand(GistFromSelectionCommand):
     """
