@@ -304,7 +304,8 @@ class GistFromSelectionCommand(BaseGitHubCommand):
             sublime.set_timeout(self.get_username, 50)
         except GitHubApi.UnknownException, e:
             sublime.error_message(e.message)
-
+        except GitHubApi.ConnectionException, e:
+            sublime.error_message(e.message)
 
 class PrivateGistFromSelectionCommand(GistFromSelectionCommand):
     """

@@ -4,6 +4,7 @@ import json
 import sublime_requests as requests
 import sys
 import logging
+from requests.exceptions import ConnectionError
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger()
@@ -21,6 +22,10 @@ class GitHubApi(object):
 
     class UnknownException(Exception):
         "Raised if we get a response code we don't recognize from GitHub"
+        pass
+
+    class ConnectionException(Exception):
+        "Raised if we get a ConnectionError"
         pass
 
     def __init__(self, base_uri="https://api.github.com", token=None, debug=False):
@@ -79,11 +84,17 @@ class GitHubApi(object):
         if method == 'get' and url in self.etags:
             headers["If-None-Match"] = self.etags[url]
         logger.debug("request: %s %s %s %s" % (method, url, headers, params))
-        resp = self.rsession.request(method, url,
+
+        try:
+            resp = self.rsession.request(method, url,
                                      headers=headers,
                                      params=params,
                                      data=data,
                                      allow_redirects=True)
+        except ConnectionError, e:
+            raise self.ConnectionException("Connection error, "
+                "please verify your internet connection: %s" % e)
+
         full_url = resp.url
         logger.debug("response: %s" % resp.headers)
         if resp.status_code in [requests.codes.OK,
