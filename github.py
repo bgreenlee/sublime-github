@@ -28,12 +28,10 @@ class GitHubApi(object):
         "Raised if we get a ConnectionError"
         pass
 
-    def __init__(self, base_uri="https://api.github.com", token=None, debug=False, proxies=None):
+    def __init__(self, base_uri="https://api.github.com", token=None, debug=False):
         self.base_uri = base_uri
         self.token = token
         self.debug = debug
-        self.proxies = proxies
-
         if debug:
             logger.setLevel(logging.DEBUG)
 
@@ -53,7 +51,6 @@ class GitHubApi(object):
         }
         resp = self.rsession.post(self.base_uri + "/authorizations",
                                   auth=(username, password),
-                                  proxies=self.proxies,
                                   data=json.dumps(auth_data))
         if resp.status_code == requests.codes.CREATED:
             data = json.loads(resp.text)
@@ -93,7 +90,6 @@ class GitHubApi(object):
                                      headers=headers,
                                      params=params,
                                      data=data,
-                                     proxies=self.proxies,
                                      allow_redirects=True)
         except ConnectionError, e:
             raise self.ConnectionException("Connection error, "

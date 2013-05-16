@@ -58,9 +58,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
                 sublime.save_settings("GitHub.sublime-settings")
         self.base_uri = self.accounts[self.active_account]["base_uri"]
         self.debug = self.settings.get('debug')
-
-        self.proxies = {'https': self.accounts[self.active_account].get("https_proxy", None)}
-        self.gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug, proxies=self.proxies)
+        self.gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug)
 
     def get_token(self):
         sublime.error_message(self.ERR_NO_USER_TOKEN)
