@@ -16,6 +16,14 @@ logger = logging.getLogger()
 
 
 class CurlSession(object):
+    ERR_UNKNOWN_CODE = "Curl failed with an unrecognized code"
+    CURL_ERRORS = {
+        2: "Curl failed initialization.",
+        5: "Curl could not resolve the proxy specified.",
+        6: "Curl could not resolve the remote host.\n\nPlease verify that your Internet"\
+            " connection works properly."
+    }
+
     class FakeSocket(StringIO):
         def makefile(self, *args, **kw):
             return self
@@ -59,12 +67,15 @@ class CurlSession(object):
             # we do the negative-lookbehind to make sure we only strip the Transfer-Encoding
             # string in the header
             text = re.sub(r'(?<!\r\n\r\n).*?Transfer-Encoding: chunked\r\n', '', text, count=1)
+
+        logger.debug("CurlSession - getting socket from %s" % text)
         socket = self.FakeSocket(text)
         response = HTTPResponse(socket)
         response.begin()
         return response
 
     def _build_response(self, text):
+        logger.debug("CurlSession: building response from %s" % text)
         raw_response = self._parse_http(text)
         response = requests.models.Response()
         response.encoding = 'utf-8'
@@ -99,12 +110,25 @@ class CurlSession(object):
 
         command = [curl] + curl_options + [url]
 
-        response = self._build_response(commandline.execute(command))
+        logger.debug("CurlSession: invoking curl with %s" % command)
+        try:
+            command_response = commandline.execute(command)
+        except commandline.CommandExecutionError, e:
+            logger.error("Curl execution: %s" % repr(e))
+            self._handle_curl_error(e.errorcode)
+            return
+
+        response = self._build_response(command_response)
         response.url = url
         return response
 
     def post(self, *args, **kwargs):
         return self.request("post", *args, **kwargs)
+
+    def _handle_curl_error(self, error):
+        sublime.error_message(
+            self.CURL_ERRORS.get(error,
+                            "%s: %s" % (self.ERR_UNKNOWN_CODE, error)))
 
 
 def session(verify=None, config=None, force_curl=False):
