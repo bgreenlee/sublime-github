@@ -107,8 +107,8 @@ class CurlSession(object):
         return self.request("post", *args, **kwargs)
 
 
-def session(verify=None, config=None):
-    if hasattr(httplib, "HTTPSConnection"):
+def session(verify=None, config=None, force_curl=False):
+    if not force_curl and hasattr(httplib, "HTTPSConnection"):
         return requests.session(verify=verify, config=config)
     else:  # try curl
         return CurlSession(verify=verify)

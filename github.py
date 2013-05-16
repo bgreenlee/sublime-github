@@ -28,7 +28,7 @@ class GitHubApi(object):
         "Raised if we get a ConnectionError"
         pass
 
-    def __init__(self, base_uri="https://api.github.com", token=None, debug=False, proxies=None):
+    def __init__(self, base_uri="https://api.github.com", token=None, debug=False, proxies=None, force_curl=False):
         self.base_uri = base_uri
         self.token = token
         self.debug = debug
@@ -43,7 +43,8 @@ class GitHubApi(object):
             logger.warning("Root CA cert bundle not found at %s! Not verifying requests." % cert_path)
             cert_path = None
         self.rsession = requests.session(verify=cert_path,
-                                         config={'verbose': sys.stderr if self.debug else None})
+                                         config={'verbose': sys.stderr if self.debug else None},
+                                         force_curl=force_curl)
 
     def get_token(self, username, password):
         auth_data = {
