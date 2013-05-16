@@ -28,6 +28,10 @@ class GitHubApi(object):
         "Raised if we get a ConnectionError"
         pass
 
+    class NullResponseException(Exception):
+        "Raised if we get an empty response (i.e., CurlSession failure)"
+        pass
+
     def __init__(self, base_uri="https://api.github.com", token=None, debug=False, proxies=None, force_curl=False):
         self.base_uri = base_uri
         self.token = token
@@ -96,6 +100,8 @@ class GitHubApi(object):
                                      data=data,
                                      proxies=self.proxies,
                                      allow_redirects=True)
+            if not resp:
+                raise self.NullResponseException("Empty response received.")
         except ConnectionError, e:
             raise self.ConnectionException("Connection error, "
                 "please verify your internet connection: %s" % e)
