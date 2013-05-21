@@ -6,6 +6,12 @@ import subprocess
 class BinaryNotFoundError(Exception):
     pass
 
+class CommandExecutionError(Exception):
+    def __init__(self, errorcode):
+        self.errorcode = errorcode
+
+    def __str__(self):
+        return repr('An error has occurred while executing the command')
 
 def find_binary(name):
     dirs = ['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin',
@@ -24,5 +30,8 @@ def execute(args):
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
     output = proc.stdout.read()
-    proc.wait()
-    return output
+
+    if proc.wait() == 0:
+        return output
+
+    raise CommandExecutionError(proc.returncode)
