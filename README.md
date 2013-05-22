@@ -169,6 +169,24 @@ Restart Sublime.
 
 That's it!
 
+## Configuring a proxy
+
+If you are behind a proxy you can configure it for each account.
+
+Note that until a [bug](https://github.com/shazow/urllib3/pull/170) in urllib3 is fixed, in order to use a proxy you also have to force curl mode (Curl is required obviously).
+
+For example:
+
+    "accounts":
+    {
+        "GitHub":
+        {
+            "base_uri": "https://api.github.com",
+            "https_proxy": "...",
+            "force_curl": true
+        }
+    }
+
 ## Bugs and Feature Requests
 
 <http://github.com/bgreenlee/sublime-github/issues>

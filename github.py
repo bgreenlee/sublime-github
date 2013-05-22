@@ -28,10 +28,16 @@ class GitHubApi(object):
         "Raised if we get a ConnectionError"
         pass
 
-    def __init__(self, base_uri="https://api.github.com", token=None, debug=False):
+    class NullResponseException(Exception):
+        "Raised if we get an empty response (i.e., CurlSession failure)"
+        pass
+
+    def __init__(self, base_uri="https://api.github.com", token=None, debug=False, proxies=None, force_curl=False):
         self.base_uri = base_uri
         self.token = token
         self.debug = debug
+        self.proxies = proxies
+
         if debug:
             logger.setLevel(logging.DEBUG)
 
@@ -41,7 +47,8 @@ class GitHubApi(object):
             logger.warning("Root CA cert bundle not found at %s! Not verifying requests." % cert_path)
             cert_path = None
         self.rsession = requests.session(verify=cert_path,
-                                         config={'verbose': sys.stderr if self.debug else None})
+                                         config={'verbose': sys.stderr if self.debug else None},
+                                         force_curl=force_curl)
 
     def get_token(self, username, password):
         auth_data = {
@@ -51,6 +58,7 @@ class GitHubApi(object):
         }
         resp = self.rsession.post(self.base_uri + "/authorizations",
                                   auth=(username, password),
+                                  proxies=self.proxies,
                                   data=json.dumps(auth_data))
         if resp.status_code == requests.codes.CREATED:
             data = json.loads(resp.text)
@@ -90,7 +98,10 @@ class GitHubApi(object):
                                      headers=headers,
                                      params=params,
                                      data=data,
+                                     proxies=self.proxies,
                                      allow_redirects=True)
+            if not resp:
+                raise self.NullResponseException("Empty response received.")
         except ConnectionError, e:
             raise self.ConnectionException("Connection error, "
                 "please verify your internet connection: %s" % e)
