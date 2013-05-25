@@ -1,59 +1,61 @@
 # urllib3/connectionpool.py
-# Copyright 2008-2012 Andrey Petrov and contributors (see CONTRIBUTORS.txt)
+# Copyright 2008-2013 Andrey Petrov and contributors (see CONTRIBUTORS.txt)
 #
 # This module is part of urllib3 and is released under
 # the MIT License: http://www.opensource.org/licenses/mit-license.php
 
 import logging
 import socket
+import errno
 
 from socket import error as SocketError, timeout as SocketTimeout
+from .util import resolve_cert_reqs, resolve_ssl_version, assert_fingerprint
 
-try:
-    from select import poll, POLLIN
-except ImportError: # Doesn't exist on OSX and other platforms
-    try:
-        from select import select
-        poll = False
-    except ImportError:  # select doesn't exist in Windows
-        select = False  # but we can get by without it
-
-try:   # Python 3
-    from http.client import HTTPConnection, HTTPSConnection, HTTPException
+try: # Python 3
+    from http.client import HTTPConnection, HTTPException
     from http.client import HTTP_PORT, HTTPS_PORT
 except ImportError:
     from httplib import HTTPConnection, HTTPException
     from httplib import HTTP_PORT, HTTPS_PORT
-    try:
-        from httplib import HTTPSConnection
-    except ImportError:   # Doesn't exist in ST's python in Linux, but we don't need it
-        HTTPSConnection = HTTPConnection
 
-try:   # Python 3
-    from queue import Queue, Empty, Full
+try: # Python 3
+    from queue import LifoQueue, Empty, Full
 except ImportError:
-    from Queue import Queue, Empty, Full
+    from Queue import LifoQueue, Empty, Full
 
-try:   # Compiled with SSL?
+
+try: # Compiled with SSL?
+    HTTPSConnection = object
+    BaseSSLError = None
+    ssl = None
+
+    try: # Python 3
+        from http.client import HTTPSConnection
+    except ImportError:
+        from httplib import HTTPSConnection
+
     import ssl
     BaseSSLError = ssl.SSLError
-except ImportError:
-    ssl = None
-    BaseSSLError = None
+
+except (ImportError, AttributeError): # Platform-specific: No SSL.
+    pass
 
 
-from .packages.ssl_match_hostname import match_hostname, CertificateError
 from .request import RequestMethods
 from .response import HTTPResponse
-from .exceptions import (SSLError,
-    MaxRetryError,
-    TimeoutError,
-    HostChangedError,
+from .util import get_host, is_connection_dropped, ssl_wrap_socket
+from .exceptions import (
+    ClosedPoolError,
     EmptyPoolError,
+    HostChangedError,
+    MaxRetryError,
+    SSLError,
+    TimeoutError,
 )
 
 from .packages.ssl_match_hostname import match_hostname, CertificateError
 from .packages import six
+
 
 xrange = six.moves.xrange
 
@@ -66,6 +68,7 @@ port_by_scheme = {
     'https': HTTPS_PORT,
 }
 
+
 ## Connection objects (extension of httplib)
 
 class VerifiedHTTPSConnection(HTTPSConnection):
@@ -75,31 +78,41 @@ class VerifiedHTTPSConnection(HTTPSConnection):
     """
     cert_reqs = None
     ca_certs = None
+    ssl_version = None
 
     def set_cert(self, key_file=None, cert_file=None,
-                 cert_reqs='CERT_NONE', ca_certs=None):
-        ssl_req_scheme = {
-            'CERT_NONE': ssl.CERT_NONE,
-            'CERT_OPTIONAL': ssl.CERT_OPTIONAL,
-            'CERT_REQUIRED': ssl.CERT_REQUIRED
-        }
+                 cert_reqs=None, ca_certs=None,
+                 assert_hostname=None, assert_fingerprint=None):
 
         self.key_file = key_file
         self.cert_file = cert_file
-        self.cert_reqs = ssl_req_scheme.get(cert_reqs) or ssl.CERT_NONE
+        self.cert_reqs = cert_reqs
         self.ca_certs = ca_certs
+        self.assert_hostname = assert_hostname
+        self.assert_fingerprint = assert_fingerprint
 
     def connect(self):
         # Add certificate verification
         sock = socket.create_connection((self.host, self.port), self.timeout)
 
+        resolved_cert_reqs = resolve_cert_reqs(self.cert_reqs)
+        resolved_ssl_version = resolve_ssl_version(self.ssl_version)
+
         # Wrap socket using verification with the root certs in
         # trusted_root_certs
-        self.sock = ssl.wrap_socket(sock, self.key_file, self.cert_file,
-                                    cert_reqs=self.cert_reqs,
-                                    ca_certs=self.ca_certs)
-        if self.ca_certs:
-            match_hostname(self.sock.getpeercert(), self.host)
+        self.sock = ssl_wrap_socket(sock, self.key_file, self.cert_file,
+                                    cert_reqs=resolved_cert_reqs,
+                                    ca_certs=self.ca_certs,
+                                    server_hostname=self.host,
+                                    ssl_version=resolved_ssl_version)
+
+        if resolved_cert_reqs != ssl.CERT_NONE:
+            if self.assert_fingerprint:
+                assert_fingerprint(self.sock.getpeercert(binary_form=True),
+                                   self.assert_fingerprint)
+            else:
+                match_hostname(self.sock.getpeercert(),
+                               self.assert_hostname or self.host)
 
 ## Pool objects
 
@@ -110,6 +123,7 @@ class ConnectionPool(object):
     """
 
     scheme = None
+    QueueCls = LifoQueue
 
     def __init__(self, host, port=None):
         self.host = host
@@ -163,13 +177,13 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
     def __init__(self, host, port=None, strict=False, timeout=None, maxsize=1,
                  block=False, headers=None):
-        self.host = host
-        self.port = port
+        ConnectionPool.__init__(self, host, port)
+        RequestMethods.__init__(self, headers)
+
         self.strict = strict
         self.timeout = timeout
-        self.pool = Queue(maxsize)
+        self.pool = self.QueueCls(maxsize)
         self.block = block
-        self.headers = headers or {}
 
         # Fill the queue up so that doing get() on it will block properly
         for _ in xrange(maxsize):
@@ -186,7 +200,9 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         self.num_connections += 1
         log.info("Starting new HTTP connection (%d): %s" %
                  (self.num_connections, self.host))
-        return HTTPConnection(host=self.host, port=self.port)
+        return HTTPConnection(host=self.host,
+                              port=self.port,
+                              strict=self.strict)
 
     def _get_conn(self, timeout=None):
         """
@@ -204,10 +220,8 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         try:
             conn = self.pool.get(block=self.block, timeout=timeout)
 
-            # If this is a persistent connection, check if it got disconnected
-            if conn and conn.sock and is_connection_dropped(conn):
-                log.info("Resetting dropped connection: %s" % self.host)
-                conn.close()
+        except AttributeError: # self.pool is None
+            raise ClosedPoolError(self, "Pool is closed.")
 
         except Empty:
             if self.block:
@@ -215,6 +229,11 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
                                      "Pool reached maximum size and no more "
                                      "connections are allowed.")
             pass  # Oh well, we'll create a new connection then
+
+        # If this is a persistent connection, check if it got disconnected
+        if conn and is_connection_dropped(conn):
+            log.info("Resetting dropped connection: %s" % self.host)
+            conn.close()
 
         return conn or self._new_conn()
 
@@ -226,16 +245,25 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             Connection object for the current host and port as returned by
             :meth:`._new_conn` or :meth:`._get_conn`.
 
-        If the pool is already full, the connection is discarded because we
-        exceeded maxsize. If connections are discarded frequently, then maxsize
-        should be increased.
+        If the pool is already full, the connection is closed and discarded
+        because we exceeded maxsize. If connections are discarded frequently,
+        then maxsize should be increased.
+
+        If the pool is closed, then the connection will be closed and discarded.
         """
         try:
             self.pool.put(conn, block=False)
+            return # Everything is dandy, done.
+        except AttributeError:
+            # self.pool is None.
+            pass
         except Full:
             # This should never happen if self.block == True
             log.warning("HttpConnectionPool is full, discarding connection: %s"
                         % self.host)
+
+        # Connection never got put back into the pool, close it.
+        conn.close()
 
     def _make_request(self, conn, method, url, timeout=_Default,
                       **httplib_request_kw):
@@ -249,24 +277,49 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             timeout = self.timeout
 
         conn.timeout = timeout # This only does anything in Py26+
-
         conn.request(method, url, **httplib_request_kw)
-        conn.sock.settimeout(timeout)
-        httplib_response = conn.getresponse()
 
-        log.debug("\"%s %s %s\" %s %s" %
-                  (method, url,
-                   conn._http_vsn_str, # pylint: disable-msg=W0212
-                   httplib_response.status, httplib_response.length))
+        # Set timeout
+        sock = getattr(conn, 'sock', False) # AppEngine doesn't have sock attr.
+        if sock:
+            sock.settimeout(timeout)
 
+        try: # Python 2.7+, use buffering of HTTP responses
+            httplib_response = conn.getresponse(buffering=True)
+        except TypeError: # Python 2.6 and older
+            httplib_response = conn.getresponse()
+
+        # AppEngine doesn't have a version attr.
+        http_version = getattr(conn, '_http_vsn_str', 'HTTP/?')
+        log.debug("\"%s %s %s\" %s %s" % (method, url, http_version,
+                                          httplib_response.status,
+                                          httplib_response.length))
         return httplib_response
 
+    def close(self):
+        """
+        Close all pooled connections and disable the pool.
+        """
+        # Disable access to the pool
+        old_pool, self.pool = self.pool, None
+
+        try:
+            while True:
+                conn = old_pool.get(block=False)
+                if conn:
+                    conn.close()
+
+        except Empty:
+            pass # Done.
 
     def is_same_host(self, url):
         """
         Check if the given ``url`` is a member of the same host as this
         connection pool.
         """
+        if url.startswith('/'):
+            return True
+
         # TODO: Add optional support for socket.gethostbyname checking.
         scheme, host, port = get_host(url)
 
@@ -274,8 +327,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             # Use explicit default port for comparison when none is given.
             port = port_by_scheme.get(scheme)
 
-        return (url.startswith('/') or
-                (scheme, host, port) == (self.scheme, self.host, self.port))
+        return (scheme, host, port) == (self.scheme, self.host, self.port)
 
     def urlopen(self, method, url, body=None, headers=None, retries=3,
                 redirect=True, assert_same_host=True, timeout=_Default,
@@ -288,7 +340,7 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
         .. note::
 
            More commonly, it's appropriate to use a convenience method provided
-           by :class:`.RequestMethods`, such as :meth:`.request`.
+           by :class:`.RequestMethods`, such as :meth:`request`.
 
         .. note::
 
@@ -314,8 +366,8 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             Number of retries to allow before raising a MaxRetryError exception.
 
         :param redirect:
-            Automatically handle redirects (status codes 301, 302, 303, 307),
-            each redirect counts as a retry.
+            If True, automatically handle redirects (status codes 301, 302,
+            303, 307). Each redirect counts as a retry.
 
         :param assert_same_host:
             If ``True``, will make sure that the host of the pool requests is
@@ -368,7 +420,6 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
         try:
             # Request a connection from the queue
-            # (Could raise SocketError: Bad file descriptor)
             conn = self._get_conn(timeout=pool_timeout)
 
             # Make the request on the httplib connection object
@@ -395,12 +446,14 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
 
         except Empty as e:
             # Timed out by queue
-            raise TimeoutError(self, "Request timed out. (pool_timeout=%s)" %
+            raise TimeoutError(self, url,
+                               "Request timed out. (pool_timeout=%s)" %
                                pool_timeout)
 
         except SocketTimeout as e:
             # Timed out by socket
-            raise TimeoutError(self, "Request timed out. (timeout=%s)" %
+            raise TimeoutError(self, url,
+                               "Request timed out. (timeout=%s)" %
                                timeout)
 
         except BaseSSLError as e:
@@ -417,23 +470,35 @@ class HTTPConnectionPool(ConnectionPool, RequestMethods):
             # This is necessary so we can access e below
             err = e
 
+            if retries == 0:
+                raise MaxRetryError(self, url, e)
+
         finally:
-            if conn and release_conn:
-                # Put the connection back to be reused
+            if release_conn:
+                # Put the connection back to be reused. If the connection is
+                # expired then it will be None, which will get replaced with a
+                # fresh connection during _get_conn.
                 self._put_conn(conn)
 
         if not conn:
+            # Try again
             log.warn("Retrying (%d attempts remain) after connection "
                      "broken by '%r': %s" % (retries, err, url))
             return self.urlopen(method, url, body, headers, retries - 1,
-                                redirect, assert_same_host)  # Try again
+                                redirect, assert_same_host,
+                                timeout=timeout, pool_timeout=pool_timeout,
+                                release_conn=release_conn, **response_kw)
 
         # Handle redirect?
         redirect_location = redirect and response.get_redirect_location()
         if redirect_location:
+            if response.status == 303:
+                method = 'GET'
             log.info("Redirecting %s -> %s" % (url, redirect_location))
             return self.urlopen(method, redirect_location, body, headers,
-                                retries - 1, redirect, assert_same_host)
+                                retries - 1, redirect, assert_same_host,
+                                timeout=timeout, pool_timeout=pool_timeout,
+                                release_conn=release_conn, **response_kw)
 
         return response
 
@@ -444,11 +509,15 @@ class HTTPSConnectionPool(HTTPConnectionPool):
 
     When Python is compiled with the :mod:`ssl` module, then
     :class:`.VerifiedHTTPSConnection` is used, which *can* verify certificates,
-    instead of :class:httplib.HTTPSConnection`.
+    instead of :class:`httplib.HTTPSConnection`.
 
-    The ``key_file``, ``cert_file``, ``cert_reqs``, and ``ca_certs`` parameters
-    are only used if :mod:`ssl` is available and are fed into
-    :meth:`ssl.wrap_socket` to upgrade the connection socket into an SSL socket.
+    :class:`.VerifiedHTTPSConnection` uses one of ``assert_fingerprint``,
+    ``assert_hostname`` and ``host`` in this order to verify connections.
+
+    The ``key_file``, ``cert_file``, ``cert_reqs``, ``ca_certs`` and
+    ``ssl_version`` are only used if :mod:`ssl` is available and are fed into
+    :meth:`urllib3.util.ssl_wrap_socket` to upgrade the connection socket
+    into an SSL socket.
     """
 
     scheme = 'https'
@@ -456,16 +525,20 @@ class HTTPSConnectionPool(HTTPConnectionPool):
     def __init__(self, host, port=None,
                  strict=False, timeout=None, maxsize=1,
                  block=False, headers=None,
-                 key_file=None, cert_file=None,
-                 cert_reqs='CERT_NONE', ca_certs=None):
+                 key_file=None, cert_file=None, cert_reqs=None,
+                 ca_certs=None, ssl_version=None,
+                 assert_hostname=None, assert_fingerprint=None):
 
-        super(HTTPSConnectionPool, self).__init__(host, port,
-                                                  strict, timeout, maxsize,
-                                                  block, headers)
+        HTTPConnectionPool.__init__(self, host, port,
+                                    strict, timeout, maxsize,
+                                    block, headers)
         self.key_file = key_file
         self.cert_file = cert_file
         self.cert_reqs = cert_reqs
         self.ca_certs = ca_certs
+        self.ssl_version = ssl_version
+        self.assert_hostname = assert_hostname
+        self.assert_fingerprint = assert_fingerprint
 
     def _new_conn(self):
         """
@@ -475,94 +548,26 @@ class HTTPSConnectionPool(HTTPConnectionPool):
         log.info("Starting new HTTPS connection (%d): %s"
                  % (self.num_connections, self.host))
 
-        if not ssl:
-            return HTTPSConnection(host=self.host, port=self.port)
+        if not ssl:  # Platform-specific: Python compiled without +ssl
+            if not HTTPSConnection or HTTPSConnection is object:
+                raise SSLError("Can't connect to HTTPS URL because the SSL "
+                               "module is not available.")
 
-        connection = VerifiedHTTPSConnection(host=self.host, port=self.port)
+            return HTTPSConnection(host=self.host,
+                                   port=self.port,
+                                   strict=self.strict)
+
+        connection = VerifiedHTTPSConnection(host=self.host,
+                                             port=self.port,
+                                             strict=self.strict)
         connection.set_cert(key_file=self.key_file, cert_file=self.cert_file,
-                            cert_reqs=self.cert_reqs, ca_certs=self.ca_certs)
+                            cert_reqs=self.cert_reqs, ca_certs=self.ca_certs,
+                            assert_hostname=self.assert_hostname,
+                            assert_fingerprint=self.assert_fingerprint)
+
+        connection.ssl_version = self.ssl_version
+
         return connection
-
-
-## Helpers
-
-def make_headers(keep_alive=None, accept_encoding=None, user_agent=None,
-                 basic_auth=None):
-    """
-    Shortcuts for generating request headers.
-
-    :param keep_alive:
-        If ``True``, adds 'connection: keep-alive' header.
-
-    :param accept_encoding:
-        Can be a boolean, list, or string.
-        ``True`` translates to 'gzip,deflate'.
-        List will get joined by comma.
-        String will be used as provided.
-
-    :param user_agent:
-        String representing the user-agent you want, such as
-        "python-urllib3/0.6"
-
-    :param basic_auth:
-        Colon-separated username:password string for 'authorization: basic ...'
-        auth header.
-
-    Example: ::
-
-        >>> make_headers(keep_alive=True, user_agent="Batman/1.0")
-        {'connection': 'keep-alive', 'user-agent': 'Batman/1.0'}
-        >>> make_headers(accept_encoding=True)
-        {'accept-encoding': 'gzip,deflate'}
-    """
-    headers = {}
-    if accept_encoding:
-        if isinstance(accept_encoding, str):
-            pass
-        elif isinstance(accept_encoding, list):
-            accept_encoding = ','.join(accept_encoding)
-        else:
-            accept_encoding = 'gzip,deflate'
-        headers['accept-encoding'] = accept_encoding
-
-    if user_agent:
-        headers['user-agent'] = user_agent
-
-    if keep_alive:
-        headers['connection'] = 'keep-alive'
-
-    if basic_auth:
-        headers['authorization'] = 'Basic ' + \
-            basic_auth.encode('base64').strip()
-
-    return headers
-
-
-def get_host(url):
-    """
-    Given a url, return its scheme, host and port (None if it's not there).
-
-    For example: ::
-
-        >>> get_host('http://google.com/mail/')
-        ('http', 'google.com', None)
-        >>> get_host('google.com:80')
-        ('http', 'google.com', 80)
-    """
-    # This code is actually similar to urlparse.urlsplit, but much
-    # simplified for our needs.
-    port = None
-    scheme = 'http'
-    if '://' in url:
-        scheme, url = url.split('://', 1)
-    if '/' in url:
-        url, _path = url.split('/', 1)
-    if '@' in url:
-        _auth, url = url.split('@', 1)
-    if ':' in url:
-        url, port = url.split(':', 1)
-        port = int(port)
-    return scheme, url, port
 
 
 def connection_from_url(url, **kw):
@@ -590,25 +595,3 @@ def connection_from_url(url, **kw):
         return HTTPSConnectionPool(host, port=port, **kw)
     else:
         return HTTPConnectionPool(host, port=port, **kw)
-
-
-def is_connection_dropped(conn):
-    """
-    Returns True if the connection is dropped and should be closed.
-
-    :param conn:
-        ``HTTPConnection`` object.
-    """
-    if not select:
-        return False
-
-    if not poll:
-        return select([conn.sock], [], [], 0.0)[0]
-
-    # This version is better on platforms that support it.
-    p = poll()
-    p.register(conn.sock, POLLIN)
-    for (fno, ev) in p.poll(0.0):
-        if fno == conn.sock.fileno():
-            # Either data is buffered (bad), or the connection is dropped.
-            return True

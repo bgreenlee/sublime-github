@@ -7,15 +7,8 @@
 import codecs
 import mimetypes
 
-try:
-    from mimetools import choose_boundary
-except ImportError:
-    from .packages.mimetools_choose_boundary import choose_boundary
-
-try:
-    from io import BytesIO
-except ImportError:
-    pass  # _fileio doesn't seem to exist in ST's python in Linux, but we don't need it
+from uuid import uuid4
+from io import BytesIO
 
 from .packages import six
 from .packages.six import b
@@ -23,19 +16,43 @@ from .packages.six import b
 writer = codecs.lookup('utf-8')[3]
 
 
+def choose_boundary():
+    """
+    Our embarassingly-simple replacement for mimetools.choose_boundary.
+    """
+    return uuid4().hex
+
+
 def get_content_type(filename):
     return mimetypes.guess_type(filename)[0] or 'application/octet-stream'
 
 
+def iter_fields(fields):
+    """
+    Iterate over fields.
+
+    Supports list of (k, v) tuples and dicts.
+    """
+    if isinstance(fields, dict):
+        return ((k, v) for k, v in six.iteritems(fields))
+
+    return ((k, v) for k, v in fields)
+
+
 def encode_multipart_formdata(fields, boundary=None):
     """
-    Encode a dictionary of ``fields`` using the multipart/form-data mime format.
+    Encode a dictionary of ``fields`` using the multipart/form-data MIME format.
 
     :param fields:
-        Dictionary of fields. The key is treated as the field name, and the
-        value as the body of the form-data. If the value is a tuple of two
+        Dictionary of fields or list of (key, value) or (key, value, MIME type)
+        field tuples.  The key is treated as the field name, and the value as
+        the body of the form-data bytes. If the value is a tuple of two
         elements, then the first element is treated as the filename of the
-        form-data section.
+        form-data section and a suitable MIME type is guessed based on the
+        filename. If the value is a tuple of three elements, then the third
+        element is treated as an explicit MIME type of the form-data section.
+
+        Field names and filenames must be unicode.
 
     :param boundary:
         If not specified, then a random boundary will be generated using
@@ -45,20 +62,24 @@ def encode_multipart_formdata(fields, boundary=None):
     if boundary is None:
         boundary = choose_boundary()
 
-    for fieldname, value in six.iteritems(fields):
+    for fieldname, value in iter_fields(fields):
         body.write(b('--%s\r\n' % (boundary)))
 
         if isinstance(value, tuple):
-            filename, data = value
+            if len(value) == 3:
+                filename, data, content_type = value
+            else:
+                filename, data = value
+                content_type = get_content_type(filename)
             writer(body).write('Content-Disposition: form-data; name="%s"; '
                                'filename="%s"\r\n' % (fieldname, filename))
             body.write(b('Content-Type: %s\r\n\r\n' %
-                       (get_content_type(filename))))
+                       (content_type,)))
         else:
             data = value
             writer(body).write('Content-Disposition: form-data; name="%s"\r\n'
                                % (fieldname))
-            body.write(b'Content-Type: text/plain\r\n\r\n')
+            body.write(b'\r\n')
 
         if isinstance(data, int):
             data = str(data)  # Backwards compatibility
@@ -72,6 +93,6 @@ def encode_multipart_formdata(fields, boundary=None):
 
     body.write(b('--%s--\r\n' % (boundary)))
 
-    content_type = b('multipart/form-data; boundary=%s' % boundary)
+    content_type = str('multipart/form-data; boundary=%s' % boundary)
 
     return body.getvalue(), content_type

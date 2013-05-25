@@ -6,7 +6,7 @@ import sublime
 import sublime_plugin
 import webbrowser
 import plistlib
-from github import GitHubApi
+from .github import GitHubApi
 import logging as logger
 try:
     import xml.parsers.expat as expat
@@ -45,7 +45,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
         self.accounts = self.settings.get("accounts")
         self.active_account = self.settings.get("active_account")
         if not self.active_account:
-            self.active_account = self.accounts.keys()[0]
+            self.active_account = list(self.accounts.keys())[0]
         self.github_token = self.accounts[self.active_account]["github_token"]
         if not self.github_token:
             self.github_token = self.settings.get("github_token")
@@ -99,7 +99,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
         except GitHubApi.UnauthorizedException:
             sublime.error_message(self.ERR_UNAUTHORIZED)
             sublime.set_timeout(self.get_username, 50)
-        except GitHubApi.UnknownException, e:
+        except GitHubApi.UnknownException as e:
             sublime.error_message(e.message)
 
 
@@ -129,9 +129,9 @@ class OpenGistCommand(BaseGitHubCommand):
             packed_gists = []
             for idx, gist in enumerate(self.gists):
                 attribs = {"index": idx + 1,
-                           "filename": gist["files"].keys()[0],
+                           "filename": list(gist["files"].keys())[0],
                            "description": gist["description"] or ''}
-                if isinstance(format, basestring):
+                if isinstance(format, str):
                     item = format % attribs
                 else:
                     item = [(format_str % attribs) for format_str in format]
@@ -144,14 +144,14 @@ class OpenGistCommand(BaseGitHubCommand):
         except GitHubApi.UnauthorizedException:
             sublime.error_message(self.ERR_UNAUTHORIZED_TOKEN)
             sublime.set_timeout(self.get_username, 50)
-        except GitHubApi.UnknownException, e:
+        except GitHubApi.UnknownException as e:
             sublime.error_message(e.message)
 
     def on_done(self, idx):
         if idx == -1:
             return
         gist = self.gists[idx]
-        filename = gist["files"].keys()[0]
+        filename = list(gist["files"].keys())[0]
         filedata = gist["files"][filename]
         content = self.gistapi.get(filedata["raw_url"])
         if self.open_in_editor:
@@ -306,9 +306,9 @@ class GistFromSelectionCommand(BaseGitHubCommand):
             sublime.save_settings("GitHub.sublime-settings")
             sublime.error_message(self.ERR_UNAUTHORIZED_TOKEN)
             sublime.set_timeout(self.get_username, 50)
-        except GitHubApi.UnknownException, e:
+        except GitHubApi.UnknownException as e:
             sublime.error_message(e.message)
-        except GitHubApi.ConnectionException, e:
+        except GitHubApi.ConnectionException as e:
             sublime.error_message(e.message)
 
 class PrivateGistFromSelectionCommand(GistFromSelectionCommand):
@@ -352,21 +352,21 @@ class UpdateGistCommand(BaseGitHubCommand):
             sublime.save_settings("GitHub.sublime-settings")
             sublime.error_message(self.ERR_UNAUTHORIZED_TOKEN)
             sublime.set_timeout(self.get_username, 50)
-        except GitHubApi.UnknownException, e:
+        except GitHubApi.UnknownException as e:
             sublime.error_message(e.message)
 
 
 class SwitchAccountsCommand(BaseGitHubCommand):
     def run(self, edit):
         super(SwitchAccountsCommand, self).run(edit)
-        accounts = self.accounts.keys()
+        accounts = list(self.accounts.keys())
         self.view.window().show_quick_panel(accounts, self.account_selected)
 
     def account_selected(self, index):
         if index == -1:
             return  # canceled
         else:
-            self.active_account = self.accounts.keys()[index]
+            self.active_account = list(self.accounts.keys())[index]
             self.settings.set("active_account", self.active_account)
             sublime.save_settings("GitHub.sublime-settings")
             self.base_uri = self.accounts[self.active_account]["base_uri"]

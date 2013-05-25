@@ -4,11 +4,11 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib
 import re
 import requests
 from requests.status_codes import codes
-import httplib
-import commandline
+import http.client
+from . import commandline
 import sublime
-from StringIO import StringIO
-from httplib import HTTPResponse
+from io import StringIO
+from http.client import HTTPResponse
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -97,14 +97,14 @@ class CurlSession(object):
         if self.verify:
             curl_options.extend(['--cacert', self.verify])
         if headers:
-            for k, v in headers.iteritems():
+            for k, v in headers.items():
                 curl_options.extend(['-H', "%s: %s" % (k, v)])
         if method in ('post', 'patch'):
             curl_options.extend(['-d', data])
         if method == 'patch':
             curl_options.extend(['-X', 'PATCH'])
         if params:
-            url += '?' + '&'.join(['='.join([k, str(v)]) for k, v in params.iteritems()])
+            url += '?' + '&'.join(['='.join([k, str(v)]) for k, v in params.items()])
         if proxies and proxies.get('https', None) :
             curl_options.extend(['-x', proxies['https']])
 
@@ -113,7 +113,7 @@ class CurlSession(object):
         logger.debug("CurlSession: invoking curl with %s" % command)
         try:
             command_response = commandline.execute(command)
-        except commandline.CommandExecutionError, e:
+        except commandline.CommandExecutionError as e:
             logger.error("Curl execution: %s" % repr(e))
             self._handle_curl_error(e.errorcode)
             return
@@ -131,8 +131,11 @@ class CurlSession(object):
                             "%s: %s" % (self.ERR_UNKNOWN_CODE, error)))
 
 
-def session(verify=None, config=None, force_curl=False):
-    if not force_curl and hasattr(httplib, "HTTPSConnection"):
-        return requests.session(verify=verify, config=config)
+def session(verify=None, force_curl=False):
+    if not force_curl and hasattr(http.client, "HTTPSConnection"):
+        session = requests.Session()
+        session.verify = verify
+        return session
     else:  # try curl
+        raise Exception("no curl!")
         return CurlSession(verify=verify)
