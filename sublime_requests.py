@@ -1,14 +1,17 @@
 import sys
 import os.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
 import re
 import requests
 from requests.status_codes import codes
-import http.client
-from . import commandline
+try:
+    import http.client as httplib
+except ImportError:
+    import httplib
+import commandline
 import sublime
 from io import StringIO
-from http.client import HTTPResponse
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -20,8 +23,8 @@ class CurlSession(object):
     CURL_ERRORS = {
         2: "Curl failed initialization.",
         5: "Curl could not resolve the proxy specified.",
-        6: "Curl could not resolve the remote host.\n\nPlease verify that your Internet"\
-            " connection works properly."
+        6: "Curl could not resolve the remote host.\n\nPlease verify that your Internet"
+           " connection works properly."
     }
 
     class FakeSocket(StringIO):
@@ -70,7 +73,7 @@ class CurlSession(object):
 
         logger.debug("CurlSession - getting socket from %s" % text)
         socket = self.FakeSocket(text)
-        response = HTTPResponse(socket)
+        response = httplib.HTTPResponse(socket)
         response.begin()
         return response
 
@@ -105,7 +108,7 @@ class CurlSession(object):
             curl_options.extend(['-X', 'PATCH'])
         if params:
             url += '?' + '&'.join(['='.join([k, str(v)]) for k, v in params.items()])
-        if proxies and proxies.get('https', None) :
+        if proxies and proxies.get('https', None):
             curl_options.extend(['-x', proxies['https']])
 
         command = [curl] + curl_options + [url]
@@ -127,12 +130,11 @@ class CurlSession(object):
 
     def _handle_curl_error(self, error):
         sublime.error_message(
-            self.CURL_ERRORS.get(error,
-                            "%s: %s" % (self.ERR_UNKNOWN_CODE, error)))
+            self.CURL_ERRORS.get(error, "%s: %s" % (self.ERR_UNKNOWN_CODE, error)))
 
 
 def session(verify=None, force_curl=False):
-    if not force_curl and hasattr(http.client, "HTTPSConnection"):
+    if not force_curl and hasattr(httplib, "HTTPSConnection"):
         session = requests.Session()
         session.verify = verify
         return session

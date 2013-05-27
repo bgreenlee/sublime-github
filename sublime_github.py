@@ -1,12 +1,13 @@
 import os
 import sys
 import os.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import re
 import sublime
 import sublime_plugin
 import webbrowser
 import plistlib
-from .github import GitHubApi
+from github import GitHubApi
 import logging as logger
 try:
     import xml.parsers.expat as expat
@@ -15,7 +16,7 @@ except ImportError:
 
 try:
     sys.path.append(os.path.join(sublime.packages_path(), 'Git'))
-    git = __import__("git")
+    import git
     sys.path.remove(os.path.join(sublime.packages_path(), 'Git'))
 except ImportError:
     git = None
@@ -62,7 +63,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
         self.proxies = {'https': self.accounts[self.active_account].get("https_proxy", None)}
         self.force_curl = self.accounts[self.active_account].get("force_curl", False)
         self.gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug,
-                                    proxies=self.proxies, force_curl=self.force_curl)
+                                 proxies=self.proxies, force_curl=self.force_curl)
 
     def get_token(self):
         sublime.error_message(self.ERR_NO_USER_TOKEN)
@@ -131,10 +132,10 @@ class OpenGistCommand(BaseGitHubCommand):
                 attribs = {"index": idx + 1,
                            "filename": list(gist["files"].keys())[0],
                            "description": gist["description"] or ''}
-                if isinstance(format, str):
-                    item = format % attribs
-                else:
+                if isinstance(format, list):
                     item = [(format_str % attribs) for format_str in format]
+                else:
+                    item = format % attribs
                 packed_gists.append(item)
 
             args = [packed_gists, self.on_done]

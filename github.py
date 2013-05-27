@@ -1,8 +1,9 @@
-import sublime
-import os.path
-import json
-from . import sublime_requests as requests
 import sys
+import os.path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sublime
+import json
+import sublime_requests as requests
 import logging
 from requests.exceptions import ConnectionError
 import pprint
@@ -40,8 +41,11 @@ class GitHubApi(object):
         self.proxies = proxies
 
         if debug:
-            import http.client
-            http.client.HTTPConnection.debuglevel = 1
+            try:
+                import http.client as httplib
+            except ImportError:
+                import httplib
+            httplib.HTTPConnection.debuglevel = 1
             logger.setLevel(logging.DEBUG)
             requests_log = logging.getLogger("requests.packages.urllib3")
             requests_log.setLevel(logging.DEBUG)
