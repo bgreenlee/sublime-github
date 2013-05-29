@@ -11,7 +11,10 @@ import collections
 import logging
 import datetime
 
-from io import BytesIO
+try:
+    from io import BytesIO
+except ImportError:
+    pass  # linux version of sublime 2 python is missing _fileio
 from .hooks import default_hooks
 from .structures import CaseInsensitiveDict
 

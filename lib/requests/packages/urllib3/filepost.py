@@ -8,7 +8,11 @@ import codecs
 import mimetypes
 
 from uuid import uuid4
-from io import BytesIO
+try:
+    from io import BytesIO
+except ImportError:
+    pass  # linux version of sublime 2 python is missing _fileio
+
 
 from .packages import six
 from .packages.six import b

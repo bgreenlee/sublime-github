@@ -11,7 +11,10 @@ except ImportError:
     import httplib
 import commandline
 import sublime
-from io import StringIO
+try:
+    from io import StringIO
+except ImportError:
+    from StringIO import StringIO  # Linux version blows up when importing io.StringIO
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s')
