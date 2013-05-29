@@ -139,5 +139,4 @@ def session(verify=None, force_curl=False):
         session.verify = verify
         return session
     else:  # try curl
-        raise Exception("no curl!")
         return CurlSession(verify=verify)
