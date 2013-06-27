@@ -383,7 +383,7 @@ if git:
         def done_remote(self, result):
             remote_origin = [r for r in result.split("\n") if "origin" in r][0]
             remote_loc = re.split('\s+', remote_origin)[1]
-            repo_url = re.sub('^git@', 'https://', remote_loc)
+            repo_url = re.sub('^git(@|://)', 'https://', remote_loc)
             repo_url = re.sub('\.com:', '.com/', repo_url)
             repo_url = re.sub('\.git$', '', repo_url)
             self.repo_url = repo_url
