@@ -382,7 +382,7 @@ if git:
 
         def done_remote(self, remote_loc):
             repo_url = re.sub('^git(@|://)', 'https://', remote_loc)
-            repo_url = re.sub('\.com:', '.com/', repo_url)
+            repo_url = re.sub(':', '/', repo_url)
             repo_url = re.sub('\.git$', '', repo_url)
             self.repo_url = repo_url
             self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
