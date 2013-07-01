@@ -380,9 +380,14 @@ if git:
         def run(self, edit):
             self.run_command("git ls-remote --get-url origin".split(), self.done_remote)
 
-        def done_remote(self, remote_loc):
-            repo_url = re.sub('^git(@|://)', 'https://', remote_loc)
-            repo_url = re.sub(':', '/', repo_url)
+        def done_remote(self, result):
+            remote_loc = result.split()[0]
+            repo_url = re.sub('^git(@|://)', 'http://', remote_loc)
+
+            # Replace the "tld:" with "tld/". See http://rubular.com/r/FK3w7CVnx5
+            tld_pattern = r'\.(com|net|org|co\..{2}):'
+            repo_url = re.sub(tld_pattern, r'.\1/', repo_url)
+
             repo_url = re.sub('\.git$', '', repo_url)
             self.repo_url = repo_url
             self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
