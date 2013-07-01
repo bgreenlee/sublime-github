@@ -378,11 +378,9 @@ if git:
         url_type = 'blob'
 
         def run(self, edit):
-            self.run_command("git remote -v".split(), self.done_remote)
+            self.run_command("git ls-remote --get-url origin".split(), self.done_remote)
 
-        def done_remote(self, result):
-            remote_origin = [r for r in result.split("\n") if "origin" in r][0]
-            remote_loc = re.split('\s+', remote_origin)[1]
+        def done_remote(self, remote_loc):
             repo_url = re.sub('^git(@|://)', 'https://', remote_loc)
             repo_url = re.sub('\.com:', '.com/', repo_url)
             repo_url = re.sub('\.git$', '', repo_url)
