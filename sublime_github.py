@@ -378,13 +378,14 @@ if git:
         url_type = 'blob'
 
         def run(self, edit):
-            self.run_command("git remote -v".split(), self.done_remote)
+            self.run_command("git ls-remote --get-url origin".split(), self.done_remote)
 
         def done_remote(self, result):
-            remote_origin = [r for r in result.split("\n") if "origin" in r][0]
-            remote_loc = re.split('\s+', remote_origin)[1]
-            repo_url = re.sub('^git(@|://)', 'https://', remote_loc)
-            repo_url = re.sub('\.com:', '.com/', repo_url)
+            remote_loc = result.split()[0]
+            repo_url = re.sub('^git(@|://)', 'http://', remote_loc)
+            # Replace the "tld:" with "tld/"
+            # https://github.com/bgreenlee/sublime-github/pull/49#commitcomment-3688312
+            repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
             repo_url = re.sub('\.git$', '', repo_url)
             self.repo_url = repo_url
             self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
