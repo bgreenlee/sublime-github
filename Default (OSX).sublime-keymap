@@ -1,6 +1,6 @@
 [
-{ "keys": ["super+g", "super+n"], "command": "public_gist_from_selection" },
-{ "keys": ["super+g", "super+p","super+n"], "command": "private_gist_from_selection" },
-{ "keys": ["super+g", "super+o"], "command": "open_gist_in_editor" },
-{ "keys": ["super+g", "super+c"], "command": "open_gist_url" }
+{ "keys": ["ctrl+super+g", "ctrl+super+n"], "command": "public_gist_from_selection" },
+{ "keys": ["ctrl+super+g", "ctrl+super+p","super+n"], "command": "private_gist_from_selection" },
+{ "keys": ["ctrl+super+g", "ctrl+super+o"], "command": "open_gist_in_editor" },
+{ "keys": ["ctrl+super+g", "ctrl+super+c"], "command": "open_gist_url" }
 ]
