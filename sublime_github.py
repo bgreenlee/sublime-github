@@ -104,6 +104,14 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
             sublime.error_message(e.message)
 
 
+class InsertTextCommand(sublime_plugin.TextCommand):
+    """
+    Internal command to insert text into a view.
+    """
+    def run(self, edit, **args):
+        self.view.insert(edit, 0, args['text'])
+
+
 class OpenGistCommand(BaseGitHubCommand):
     """
     Open a gist.
@@ -169,9 +177,7 @@ class OpenGistCommand(BaseGitHubCommand):
                     logger.warn("no mapping for '%s'" % extension)
                     pass
             # insert the gist
-            edit = new_view.begin_edit('gist')
-            new_view.insert(edit, 0, content)
-            new_view.end_edit(edit)
+            new_view.run_command("insert_text", {'text': content})
             new_view.set_name(filename)
             new_view.settings().set('gist', gist)
         elif self.copy_gist_id:
