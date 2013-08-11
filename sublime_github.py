@@ -384,7 +384,7 @@ if git:
         url_type = 'blob'
 
         def run(self, edit):
-            self.run_command("git ls-remote --get-url origin".split(), self.done_remote)
+            self.run_command("git ls-remote --get-url".split(), self.done_remote)
 
         def done_remote(self, result):
             remote_loc = result.split()[0]
