@@ -114,6 +114,20 @@ whatever the base url is for your private GitHub, plus "/api/v3". For example:
 Don't worry about setting the `github_token`--that will be set for you automatically, after you
 switch accounts (Shift-Cmd-P, "GitHub: Switch Accounts").
 
+## Key Bindings
+
+You can add your own keyboard shortcuts in Preferences -> Key Bindings - User. For example:
+
+    [
+        { "keys": ["ctrl+super+g", "ctrl+super+n"], "command": "public_gist_from_selection" },
+        { "keys": ["ctrl+super+g", "ctrl+super+p","super+n"], "command": "private_gist_from_selection" },
+        { "keys": ["ctrl+super+g", "ctrl+super+o"], "command": "open_gist_in_editor" },
+        { "keys": ["ctrl+super+g", "ctrl+super+c"], "command": "open_gist_url" }
+    ]
+
+(Note that `ctrl+super+g` (^⌘G) conflicts with Sublime Text's Quick Find All, so adjust accordingly.)
+Available commands can be seen in <https://github.com/bgreenlee/sublime-github/blob/master/Github.sublime-commands>.
+
 ## Issues
 
 * Linux requires the [curl](http://curl.haxx.se/) binary to be installed on your system (in one of:

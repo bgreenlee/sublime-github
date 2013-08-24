@@ -1,6 +1,0 @@
-[
-{ "keys": ["ctrl+super+g", "ctrl+super+n"], "command": "public_gist_from_selection" },
-{ "keys": ["ctrl+super+g", "ctrl+super+p","super+n"], "command": "private_gist_from_selection" },
-{ "keys": ["ctrl+super+g", "ctrl+super+o"], "command": "open_gist_in_editor" },
-{ "keys": ["ctrl+super+g", "ctrl+super+c"], "command": "open_gist_url" }
-]
