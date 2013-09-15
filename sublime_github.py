@@ -31,6 +31,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
     """
     MSG_USERNAME = "GitHub username:"
     MSG_PASSWORD = "GitHub password:"
+    MSG_ONE_TIME_PASSWORD = "One-time passowrd (for 2FA):"
     MSG_TOKEN_SUCCESS = "Your access token has been saved. We'll now resume your command."
     ERR_NO_USER_TOKEN = "Your GitHub Gist access token needs to be configured.\n\n"\
         "Click OK and then enter your GitHub username and password below (neither will "\
@@ -43,6 +44,8 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
     def run(self, edit):
         self.settings = sublime.load_settings("GitHub.sublime-settings")
         self.github_user = None
+        self.github_password = None
+        self.github_one_time_password = None
         self.accounts = self.settings.get("accounts")
         self.active_account = self.settings.get("active_account")
         if not self.active_account:
@@ -75,16 +78,29 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
     def get_password(self):
         self.view.window().show_input_panel(self.MSG_PASSWORD, "", self.on_done_password, None, None)
 
+    def get_one_time_password(self):
+        self.view.window().show_input_panel(self.MSG_ONE_TIME_PASSWORD, "", self.on_done_one_time_password, None, None)
+
     def on_done_username(self, value):
         "Callback for the username show_input_panel."
         self.github_user = value
         # need to do this or the input panel doesn't show
         sublime.set_timeout(self.get_password, 50)
 
+    def on_done_one_time_password(self, value):
+        "Callback for the one-time password show_input_panel"
+        self.github_one_time_password = value
+        self.on_done_password(self.github_password)
+
     def on_done_password(self, value):
         "Callback for the password show_input_panel"
+        self.github_password = value
         try:
-            self.github_token = GitHubApi(self.base_uri, debug=self.debug).get_token(self.github_user, value)
+            api = GitHubApi(self.base_uri, debug=self.debug)
+            self.github_token = api.get_token(self.github_user,
+                                              self.github_password,
+                                              self.github_one_time_password)
+            self.github_password = self.github_one_time_password = None  # don't keep these around
             self.accounts[self.active_account]["github_token"] = self.github_token
             self.settings.set("accounts", self.accounts)
             sublime.save_settings("GitHub.sublime-settings")
@@ -97,6 +113,8 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
                     sublime.set_timeout(callback, 50)
             except AttributeError:
                 pass
+        except GitHubApi.OTPNeededException:
+            sublime.set_timeout(self.get_one_time_password, 50)
         except GitHubApi.UnauthorizedException:
             sublime.error_message(self.ERR_UNAUTHORIZED)
             sublime.set_timeout(self.get_username, 50)

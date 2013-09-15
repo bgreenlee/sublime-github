@@ -22,6 +22,10 @@ class GitHubApi(object):
         "Raised if we get a 401 from GitHub"
         pass
 
+    class OTPNeededException(Exception):
+        "Raised if 2FA is configured and we need a one-time password"
+        pass
+
     class UnknownException(Exception):
         "Raised if we get a response code we don't recognize from GitHub"
         pass
@@ -59,13 +63,15 @@ class GitHubApi(object):
         self.rsession = requests.session(verify=cert_path,
                                          force_curl=force_curl)
 
-    def get_token(self, username, password):
+    def get_token(self, username, password, one_time_password=None):
         auth_data = {
             "scopes": ["gist"],
             "note": "Sublime GitHub",
             "note_url": "https://github.com/bgreenlee/sublime-github"
         }
+        headers = {'X-GitHub-OTP': one_time_password} if one_time_password else {}
         resp = self.rsession.post(self.base_uri + "/authorizations",
+                                  headers=headers,
                                   auth=(username, password),
                                   proxies=self.proxies,
                                   data=json.dumps(auth_data))
@@ -74,7 +80,10 @@ class GitHubApi(object):
             data = json.loads(resp.text)
             return data["token"]
         elif resp.status_code == requests.codes.UNAUTHORIZED:
-            raise self.UnauthorizedException()
+            if resp.headers['X-GitHub-OTP'].startswith('required'):
+                raise self.OTPNeededException()
+            else:
+                raise self.UnauthorizedException()
         else:
             raise self.UnknownException("%d %s" % (resp.status_code, resp.text))
 
