@@ -11,10 +11,7 @@ except ImportError:
     import httplib
 import commandline
 import sublime
-try:
-    from io import StringIO
-except ImportError:
-    from StringIO import StringIO  # Linux version blows up when importing io.StringIO
+from io import BytesIO
 import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s')
@@ -30,7 +27,7 @@ class CurlSession(object):
            " connection works properly."
     }
 
-    class FakeSocket(StringIO):
+    class FakeSocket(BytesIO):
         def makefile(self, *args, **kw):
             return self
 
@@ -39,6 +36,7 @@ class CurlSession(object):
 
     def _parse_http(self, text):
         # if the response text starts with a 302, skip to the next non-302 header
+        text = str(text, encoding='utf-8')
         if re.match(r'^HTTP/.*?\s302 Found', text):
             m = re.search(r'(HTTP/\d+\.\d+\s(?!302 Found).*$)', text, re.S)
             if not m:
@@ -75,7 +73,7 @@ class CurlSession(object):
             text = re.sub(r'(?<!\r\n\r\n).*?Transfer-Encoding: chunked\r\n', '', text, count=1)
 
         logger.debug("CurlSession - getting socket from %s" % text)
-        socket = self.FakeSocket(text)
+        socket = self.FakeSocket(text.encode())
         response = httplib.HTTPResponse(socket)
         response.begin()
         return response
