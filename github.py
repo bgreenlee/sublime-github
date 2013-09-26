@@ -131,17 +131,17 @@ class GitHubApi(object):
                                 requests.codes.CREATED,
                                 requests.codes.FOUND,
                                 requests.codes.CONTINUE]:
-            if 'application/json' in resp.headers['content-type']:
+            if 'application/json' in resp.headers['Content-Type']:
                 resp_data = json.loads(resp.text)
             else:
                 resp_data = resp.text
             if method == 'get':  # cache the response
-                etag = resp.headers['etag']
+                etag = resp.headers['ETag']
                 self.etags[full_url] = etag
                 self.cache[etag] = resp_data
             return resp_data
         elif resp.status_code == requests.codes.NOT_MODIFIED:
-            return self.cache[resp.headers['etag']]
+            return self.cache[resp.headers['ETag']]
         elif resp.status_code == requests.codes.UNAUTHORIZED:
             raise self.UnauthorizedException()
         else:
