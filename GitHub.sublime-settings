@@ -8,7 +8,7 @@
     },
 
     // You can add support for a private GitHub installation by adding another entry
-    // to the accounts entry in the User settings file (Preferences -> 
+    // to the accounts entry in the User settings file (Preferences ->
     // Package Settings -> GitHub -> Settings - User). You can then switch between
     // accounts via the GitHub: Switch Accounts command
     //
@@ -25,13 +25,15 @@
     //    filename - filename of [first file in] gist
     //    description - description of gist
     //    index - 1-based index of gist in the list
-    // 
+    //
     // Some things to try:
     // "gist_list_format": "%(index)d. %(filename)s: %(description)s",
     // "gist_list_format": ["%(filename)s", "%(description)s"],
     "gist_list_format": "%(filename)s: %(description)s",
     // If true, display the list of gists in a monospace font
     "gist_list_monospace": false,
+    // Highlight the line the cursor is on in GitHub, even if the line is not selected
+    "always_highlight_current_line": false,
     // output debug info to the console
     "debug": false
 }

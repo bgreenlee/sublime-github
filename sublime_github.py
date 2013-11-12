@@ -403,6 +403,7 @@ if git:
         allows_line_highlights = False
 
         def run(self, edit):
+            self.settings = sublime.load_settings("GitHub.sublime-settings")
             self.run_command("git ls-remote --get-url".split(), self.done_remote)
 
         def done_remote(self, result):
@@ -432,7 +433,7 @@ if git:
                     line_nums = "#L%s" % (start_row + 1)
                     if end_row > start_row:
                         line_nums += "-L%s" % (end_row + 1)
-                else:
+                elif self.settings.get("always_highlight_current_line"):
                     (current_row, _) = self.view.rowcol(self.view.sel()[0].begin())
                     line_nums = "#L%s" % (current_row + 1)
 
