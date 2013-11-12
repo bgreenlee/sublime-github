@@ -431,6 +431,9 @@ if git:
                     line_nums = "#L%s" % (start_row + 1)
                     if end_row > start_row:
                         line_nums += "-L%s" % (end_row + 1)
+                else:
+                    (current_row, _) = self.view.rowcol(self.view.sel()[0].begin())
+                    line_nums = "#L%s" % (current_row + 1)
 
             self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, current_branch, relative_path, line_nums)
             self.on_done()
