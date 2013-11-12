@@ -400,6 +400,7 @@ class SwitchAccountsCommand(BaseGitHubCommand):
 if git:
     class RemoteUrlCommand(git.GitTextCommand):
         url_type = 'blob'
+        allows_line_highlights = False
 
         def run(self, edit):
             self.run_command("git ls-remote --get-url".split(), self.done_remote)
