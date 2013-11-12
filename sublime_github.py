@@ -463,10 +463,6 @@ class CopyRemoteUrlCommand(RemoteUrlCommand):
         sublime.status_message("Remote URL copied to clipboard")
 
 
-class ViewCommand(OpenRemoteUrlCommand):
-    url_type = 'blob'
-
-
 class BlameCommand(OpenRemoteUrlCommand):
     url_type = 'blame'
 
