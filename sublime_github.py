@@ -226,6 +226,20 @@ class OpenGistCommand(BaseGitHubCommand):
                 except KeyError:  # no file types
                     pass
 
+        # load ST3 syntax files
+        if hasattr(sublime, "find_resources"):
+            syntax_files = sublime.find_resources("*.tmLanguage")
+            for syntax_file in syntax_files:
+                try:
+                    plist = plistlib.readPlistFromBytes(bytearray(sublime.load_resource(syntax_file), "utf-8"))
+                    if plist:
+                        for file_type in plist['fileTypes']:
+                            syntax_file_map[file_type.lower()] = syntax_file
+                except expat.ExpatError:  # can't parse
+                    logger.warn("could not parse '%s'" % syntax_file)
+                except KeyError:  # no file types
+                    pass
+
         return syntax_file_map
 
 
