@@ -428,6 +428,11 @@ if git:
             repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
             repo_url = re.sub('\.git$', '', repo_url)
             self.repo_url = repo_url
+            self.run_command("git rev-parse --show-toplevel".split(), self.done_toplevel)
+
+        # Get the repo's explicit toplevel path
+        def done_toplevel(self, result):
+            self.toplevel_path = result.strip()
             self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
 
         def done_rev_parse(self, result):
@@ -436,6 +441,11 @@ if git:
             # get file path within repo
             repo_name = self.repo_url.split("/").pop()
             relative_path = self.view.file_name().split(repo_name, 1).pop()
+
+            # Use the explicit toplevel path to handle submodules
+            relative_path = re.sub(self.toplevel_path, '', relative_path)
+
+
             line_nums = ""
             if self.allows_line_highlights:
                 # if any lines are selected, the first of those
