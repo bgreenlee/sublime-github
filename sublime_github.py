@@ -180,7 +180,7 @@ class OpenGistCommand(BaseGitHubCommand):
         gist = self.gists[idx]
         filename = list(gist["files"].keys())[0]
         filedata = gist["files"][filename]
-        content = self.gistapi.get(filedata["raw_url"])
+        content = self.gistapi.get_gist(gist)
         if self.open_in_editor:
             new_view = self.view.window().new_file()
             if expat:  # not present in Linux
