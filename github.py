@@ -152,6 +152,10 @@ class GitHubApi(object):
                                     "public": public,
                                     "files": {filename: {"content": content}}})
 
+    def get_gist(self, gist):
+        data = self.get("/gists/" + gist["id"])
+        return list(data["files"].values())[0]["content"]
+
     def update_gist(self, gist, content):
         filename = list(gist["files"].keys())[0]
         return self.patch("/gists/" + gist["id"],
