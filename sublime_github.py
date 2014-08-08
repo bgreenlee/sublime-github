@@ -481,6 +481,9 @@ class OpenRemoteUrlCommand(RemoteUrlCommand):
 
 class CopyRemoteUrlCommand(RemoteUrlCommand):
     def run(self, edit):
+        self.settings = sublime.load_settings("GitHub.sublime-settings")
+        if self.settings.get("copy_remote_url_highlights"):
+            self.allows_line_highlights = True
         super(CopyRemoteUrlCommand, self).run(edit)
 
     def on_done(self):
