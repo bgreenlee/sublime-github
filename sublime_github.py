@@ -422,7 +422,7 @@ if git:
 
         def done_remote(self, result):
             remote_loc = result.split()[0]
-            repo_url = re.sub('^git(@|://)', 'http://', remote_loc)
+            repo_url = re.sub('^git(@|://)', 'https://', remote_loc)
             # Replace the "tld:" with "tld/"
             # https://github.com/bgreenlee/sublime-github/pull/49#commitcomment-3688312
             repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
