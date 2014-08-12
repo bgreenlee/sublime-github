@@ -480,6 +480,8 @@ class OpenRemoteUrlCommand(RemoteUrlCommand):
 
 
 class CopyRemoteUrlCommand(RemoteUrlCommand):
+    allows_line_highlights = True
+
     def run(self, edit):
         super(CopyRemoteUrlCommand, self).run(edit)
 
