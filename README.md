@@ -75,7 +75,7 @@ The following commands are available in the Command Palette:
 
 * **GitHub: Blame**
 
-    Open the GitHub blame view of the current file in the browser
+    Open the GitHub blame view of the current file in the browser. (Note: The browser will highlight and scroll to any currently selected code.)
 
 * **GitHub: History**
 
