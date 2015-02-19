@@ -67,15 +67,15 @@ The following commands are available in the Command Palette:
 
 * **GitHub: Open Remote URL in Browser**
 
-    Open the current file's location in the repository in the browser.
+    Open the current file's location in the repository in the browser. If you have any lines selected, they will be highlighted in the browser.
 
 * **GitHub: Copy Remote URL to Clipboard**
 
-    Put the url of the current file's location in the repository into the clipboard.
+    Put the url of the current file's location in the repository into the clipboard. If you have any lines selected, they will be included in the URL and highlighted when opened in a browser.
 
 * **GitHub: Blame**
 
-    Open the GitHub blame view of the current file in the browser. (Note: The browser will highlight and scroll to any currently selected code.)
+    Open the GitHub blame view of the current file in the browser. If you have any lines selected, they will be highlighted in the browser.
 
 * **GitHub: History**
 
