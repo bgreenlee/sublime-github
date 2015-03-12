@@ -31,7 +31,7 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
     """
     MSG_USERNAME = "GitHub username:"
     MSG_PASSWORD = "GitHub password:"
-    MSG_ONE_TIME_PASSWORD = "One-time passowrd (for 2FA):"
+    MSG_ONE_TIME_PASSWORD = "One-time password (for 2FA):"
     MSG_TOKEN_SUCCESS = "Your access token has been saved. We'll now resume your command."
     ERR_NO_USER_TOKEN = "Your GitHub Gist access token needs to be configured.\n\n"\
         "Click OK and then enter your GitHub username and password below (neither will "\
