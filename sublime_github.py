@@ -439,7 +439,10 @@ if git:
             # get current branch
             current_branch = result.strip()
             # get file path within repo
-            relative_path = self.view.file_name().split(self.toplevel_path, 1).pop()
+            absolute_path = self.view.file_name()
+            # self.view.file_name() contains backslash on Windows instead of forwardslash
+            absolute_path = absolute_path.replace('\\', '/')
+            relative_path = absolute_path.split(self.toplevel_path, 1).pop()
 
             line_nums = ""
             if self.allows_line_highlights:
