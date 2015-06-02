@@ -442,7 +442,8 @@ if git:
             absolute_path = self.view.file_name()
             # self.view.file_name() contains backslash on Windows instead of forwardslash
             absolute_path = absolute_path.replace('\\', '/')
-            relative_path = absolute_path.split(self.toplevel_path, 1).pop()
+            # we case-insensitive split because Windows
+            relative_path = re.split(re.escape(self.toplevel_path), absolute_path, re.IGNORECASE).pop()
 
             line_nums = ""
             if self.allows_line_highlights:
