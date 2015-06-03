@@ -1,0 +1,1 @@
+Fixed issues (#80 and #82) with incorrect file urls being generated (Thanks @farzher and @markschwarz).
