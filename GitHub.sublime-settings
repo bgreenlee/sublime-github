@@ -14,7 +14,9 @@
     //
     // "YourCo": {
     //     "base_uri": "https://github.yourco.com/api/v3",
-    //     "github_token": ""
+    //     "github_token": "",
+    //     "protocol": "http",  // default is "https"
+    //     "remote": "upsteam"  // default is "" (no remote)
     // }
 
     // The format of the each line in the list of gists.

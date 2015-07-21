@@ -67,7 +67,7 @@ The following commands are available in the Command Palette:
 
 * **GitHub: Open Remote URL in Browser**
 
-    Open the current file's location in the repository in the browser. If you have any lines selected, they will be highlighted in the browser.
+    Open the current file's location in the repository in the browser. If you have any lines selected, they will be highlighted in the browser.  The default protocol is 'https'.  The default remote used is '' (no remote).  If you want to change either of those set them in your GitHub.sublime-settings file for your specific account.
 
 * **GitHub: Copy Remote URL to Clipboard**
 

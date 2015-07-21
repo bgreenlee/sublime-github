@@ -420,11 +420,22 @@ if git:
 
         def run(self, edit):
             self.settings = sublime.load_settings("GitHub.sublime-settings")
-            self.run_command("git ls-remote --get-url".split(), self.done_remote)
+            self.active_account = self.settings.get("active_account")
+            self.accounts = self.settings.get("accounts")
+
+            if not self.active_account:
+                self.active_account = list(self.accounts.keys())[0]
+
+            self.protocol = self.accounts[self.active_account].get("protocol", "https")
+            remote = self.accounts[self.active_account].get("remote", "")
+
+            command = "git ls-remote --get-url " + remote
+
+            self.run_command(command.split(), self.done_remote)
 
         def done_remote(self, result):
             remote_loc = result.split()[0]
-            repo_url = re.sub('^git(@|://)', 'https://', remote_loc)
+            repo_url = re.sub('^git(@|://)', self.protocol + '://', remote_loc)
             # Replace the "tld:" with "tld/"
             # https://github.com/bgreenlee/sublime-github/pull/49#commitcomment-3688312
             repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
