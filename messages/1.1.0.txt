@@ -1,0 +1,1 @@
+Give users more control over the opened url (#83). Thanks @pcg79!
