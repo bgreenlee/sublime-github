@@ -417,6 +417,7 @@ if git:
     class RemoteUrlCommand(git.GitTextCommand):
         url_type = 'blob'
         allows_line_highlights = False
+        master = False  # operate on current branch by default
 
         def run(self, edit):
             self.settings = sublime.load_settings("GitHub.sublime-settings")
@@ -486,7 +487,6 @@ else:
 
 class OpenRemoteUrlCommand(RemoteUrlCommand):
     allows_line_highlights = True
-    master = False
 
     def run(self, edit):
         super(OpenRemoteUrlCommand, self).run(edit)
@@ -501,7 +501,6 @@ class OpenRemoteUrlMasterCommand(OpenRemoteUrlCommand):
 
 class CopyRemoteUrlCommand(RemoteUrlCommand):
     allows_line_highlights = True
-    master = False
 
     def run(self, edit):
         super(CopyRemoteUrlCommand, self).run(edit)
