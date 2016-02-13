@@ -1,0 +1,1 @@
+Added commands that operate on master, rather than current branch (#96). Thanks, @davidrunger!
