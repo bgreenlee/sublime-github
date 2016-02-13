@@ -11,9 +11,15 @@
     { "caption": "GitHub: Update Gist", "command": "update_gist" },
     { "caption": "GitHub: Switch Accounts", "command": "switch_accounts" },
     { "caption": "GitHub: Copy Remote URL to Clipboard", "command": "copy_remote_url" },
+    { "caption": "GitHub: Copy Remote URL to Clipboard (master)", "command": "copy_remote_url_master" },
     { "caption": "GitHub: Open Remote URL in Browser", "command": "open_remote_url" },
+    { "caption": "GitHub: Open Remote URL in Browser (master)", "command": "open_remote_url_master" },
     { "caption": "GitHub: View", "command": "open_remote_url"},
+    { "caption": "GitHub: View (master)", "command": "open_remote_url_master"},
     { "caption": "GitHub: Blame", "command": "blame"},
+    { "caption": "GitHub: Blame (master)", "command": "blame_master"},
     { "caption": "GitHub: History", "command": "history"},
-    { "caption": "GitHub: Edit", "command": "edit"}
+    { "caption": "GitHub: History (master)", "command": "history_master"},
+    { "caption": "GitHub: Edit", "command": "edit"},
+    { "caption": "GitHub: Edit (master)", "command": "edit_master"}
 ]

@@ -65,6 +65,8 @@ The following commands are available in the Command Palette:
 
 **The following commands require the Git plugin, available through the Package Manager. After installing, restart Sublime Text.**
 
+**Note:** These commands use the currently checked out branch to generate GitHub URLs. Each command also has a corresponding version, such as **GitHub: Blame (master)**, that always uses the master branch, regardless of which branch is checked out locally.
+
 * **GitHub: Open Remote URL in Browser**
 
     Open the current file's location in the repository in the browser. If you have any lines selected, they will be highlighted in the browser.  The default protocol is 'https'.  The default remote used is '' (no remote).  If you want to change either of those set them in your GitHub.sublime-settings file for your specific account.
@@ -80,6 +82,10 @@ The following commands are available in the Command Palette:
 * **GitHub: History**
 
     Open the GitHub commit history view of the current file in the browser.
+
+* **GitHub: View**
+
+    Alias for *GitHub: Open Remote URL in Browser*
 
 * **GitHub: Edit**
 
