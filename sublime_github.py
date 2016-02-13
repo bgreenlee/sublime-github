@@ -446,7 +446,10 @@ if git:
         # Get the repo's explicit toplevel path
         def done_toplevel(self, result):
             self.toplevel_path = result.strip()
-            self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
+            if self.master:
+                self.done_rev_parse("master")
+            else:
+                self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
 
         def done_rev_parse(self, result):
             # get current branch
@@ -483,6 +486,7 @@ else:
 
 class OpenRemoteUrlCommand(RemoteUrlCommand):
     allows_line_highlights = True
+    master = False
 
     def run(self, edit):
         super(OpenRemoteUrlCommand, self).run(edit)
@@ -491,8 +495,13 @@ class OpenRemoteUrlCommand(RemoteUrlCommand):
         webbrowser.open(self.url)
 
 
+class OpenRemoteUrlMasterCommand(OpenRemoteUrlCommand):
+    master = True
+
+
 class CopyRemoteUrlCommand(RemoteUrlCommand):
     allows_line_highlights = True
+    master = False
 
     def run(self, edit):
         super(CopyRemoteUrlCommand, self).run(edit)
@@ -502,15 +511,34 @@ class CopyRemoteUrlCommand(RemoteUrlCommand):
         sublime.status_message("Remote URL copied to clipboard")
 
 
+class CopyRemoteUrlMasterCommand(CopyRemoteUrlCommand):
+    master = True
+
+
 class BlameCommand(OpenRemoteUrlCommand):
     url_type = 'blame'
+    master = False
+
+
+class BlameMasterCommand(BlameCommand):
+    master = True
 
 
 class HistoryCommand(OpenRemoteUrlCommand):
     url_type = 'commits'
     allows_line_highlights = False
+    master = False
+
+
+class HistoryMasterCommand(HistoryCommand):
+    master = True
 
 
 class EditCommand(OpenRemoteUrlCommand):
     url_type = 'edit'
     allows_line_highlights = False
+    master = False
+
+
+class EditMasterCommand(EditCommand):
+    master = True
