@@ -516,7 +516,6 @@ class CopyRemoteUrlMasterCommand(CopyRemoteUrlCommand):
 
 class BlameCommand(OpenRemoteUrlCommand):
     url_type = 'blame'
-    master = False
 
 
 class BlameMasterCommand(BlameCommand):
@@ -526,7 +525,6 @@ class BlameMasterCommand(BlameCommand):
 class HistoryCommand(OpenRemoteUrlCommand):
     url_type = 'commits'
     allows_line_highlights = False
-    master = False
 
 
 class HistoryMasterCommand(HistoryCommand):
@@ -536,7 +534,6 @@ class HistoryMasterCommand(HistoryCommand):
 class EditCommand(OpenRemoteUrlCommand):
     url_type = 'edit'
     allows_line_highlights = False
-    master = False
 
 
 class EditMasterCommand(EditCommand):
