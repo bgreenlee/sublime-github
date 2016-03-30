@@ -469,7 +469,12 @@ if git:
                 if non_empty_regions:
                     selection = non_empty_regions[0]
                     (start_row, _) = self.view.rowcol(selection.begin())
-                    (end_row, _) = self.view.rowcol(selection.end())
+                    (end_row, end_col) = self.view.rowcol(selection.end())
+                    # If you select a single line (e.g., by using 'Expand selection to line'),
+                    # the selection will actually end up as two lines, ending at column 0 of
+                    # the second line. This accounts for that so that the final line is ignored.
+                    if end_col == 0:
+                        end_row -= 1
                     line_nums = "#L%s" % (start_row + 1)
                     if end_row > start_row:
                         line_nums += "-L%s" % (end_row + 1)
