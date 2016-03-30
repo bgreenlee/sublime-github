@@ -420,6 +420,16 @@ if git:
         master = False  # operate on current branch by default
 
         def run(self, edit):
+            if self.master:
+                branch = "master"
+            else:
+                branch = ""
+            command = "git rev-parse --abbrev-ref --symbolic-full-name %s@{upstream}" % branch
+            self.run_command(command.split(), self.done_rev_parse)
+
+        def done_rev_parse(self, result):
+            remote, self.remote_branch = result.strip().split("/", 1)
+
             self.settings = sublime.load_settings("GitHub.sublime-settings")
             self.active_account = self.settings.get("active_account")
             self.accounts = self.settings.get("accounts")
@@ -428,7 +438,8 @@ if git:
                 self.active_account = list(self.accounts.keys())[0]
 
             self.protocol = self.accounts[self.active_account].get("protocol", "https")
-            remote = self.accounts[self.active_account].get("remote", "")
+            # Override the remote with the user setting (if it exists)
+            remote = self.accounts[self.active_account].get("remote", remote)
 
             command = "git ls-remote --get-url " + remote
 
@@ -447,14 +458,6 @@ if git:
         # Get the repo's explicit toplevel path
         def done_toplevel(self, result):
             self.toplevel_path = result.strip()
-            if self.master:
-                self.done_rev_parse("master")
-            else:
-                self.run_command("git rev-parse --abbrev-ref HEAD".split(), self.done_rev_parse)
-
-        def done_rev_parse(self, result):
-            # get current branch
-            current_branch = result.strip()
             # get file path within repo
             absolute_path = self.view.file_name()
             # self.view.file_name() contains backslash on Windows instead of forwardslash
@@ -477,7 +480,7 @@ if git:
                     (current_row, _) = self.view.rowcol(self.view.sel()[0].begin())
                     line_nums = "#L%s" % (current_row + 1)
 
-            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, current_branch, relative_path, line_nums)
+            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, self.remote_branch, relative_path, line_nums)
             self.on_done()
 else:
     class RemoteUrlCommand(sublime_plugin.TextCommand):
