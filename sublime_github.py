@@ -14,7 +14,7 @@ try:
 except ImportError:
     expat = None
 
-VERSION = 118
+VERSION = "1.2.2"
 
 try:
     sys.path.append(os.path.join(sublime.packages_path(), 'Git'))

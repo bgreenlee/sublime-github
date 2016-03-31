@@ -1,0 +1,4 @@
+- Open GitHub with the upstream branch name, rather than the remote branch name (https://github.com/bgreenlee/sublime-github/pull/98), and use the remote associated with the branch rather than the default remote (https://github.com/bgreenlee/sublime-github/pull/98)
+- Fix selection range if you select a full line (https://github.com/bgreenlee/sublime-github/pull/99)
+
+Thanks @russelldavis for both fixes!
