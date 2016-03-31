@@ -428,6 +428,10 @@ if git:
             self.run_command(command.split(), self.done_rev_parse)
 
         def done_rev_parse(self, result):
+            if "fatal:" in result:
+                sublime.error_message(result)
+                return
+
             remote, self.remote_branch = result.strip().split("/", 1)
 
             self.settings = sublime.load_settings("GitHub.sublime-settings")
