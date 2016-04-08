@@ -424,30 +424,31 @@ if git:
                 branch = "master"
             else:
                 branch = ""
-            command = "git rev-parse --abbrev-ref --symbolic-full-name %s@{upstream}" % branch
-            self.run_command(command.split(), self.done_rev_parse)
-
-        def done_rev_parse(self, result):
-            if "fatal:" in result:
-                sublime.error_message(result)
-                return
-
-            remote, self.remote_branch = result.strip().split("/", 1)
 
             self.settings = sublime.load_settings("GitHub.sublime-settings")
             self.active_account = self.settings.get("active_account")
             self.accounts = self.settings.get("accounts")
-
             if not self.active_account:
                 self.active_account = list(self.accounts.keys())[0]
-
             self.protocol = self.accounts[self.active_account].get("protocol", "https")
-            # Override the remote with the user setting (if it exists)
-            remote = self.accounts[self.active_account].get("remote", remote)
+            self.remote = self.accounts[self.active_account].get("default_remote", "origin")
 
-            command = "git ls-remote --get-url " + remote
+            command = "git rev-parse --abbrev-ref --symbolic-full-name %s@{upstream}" % branch
+
+            self.run_command(command.split(), self.done_rev_parse)
+
+        def done_rev_parse(self, result):
+            if "fatal:" in result:
+                self.run_command("git rev-parse HEAD".split(), self.set_sha_instead_of_branch)
+            else:
+                self.remote, self.remote_branch_or_sha = result.strip().split("/", 1)
+
+            command = "git ls-remote --get-url " + self.remote
 
             self.run_command(command.split(), self.done_remote)
+
+        def set_sha_instead_of_branch(self, result):
+            self.remote_branch_or_sha = result.strip()
 
         def done_remote(self, result):
             remote_loc = result.split()[0]
@@ -489,7 +490,7 @@ if git:
                     (current_row, _) = self.view.rowcol(self.view.sel()[0].begin())
                     line_nums = "#L%s" % (current_row + 1)
 
-            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, self.remote_branch, relative_path, line_nums)
+            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, self.remote_branch_or_sha, relative_path, line_nums)
             self.on_done()
 else:
     class RemoteUrlCommand(sublime_plugin.TextCommand):
