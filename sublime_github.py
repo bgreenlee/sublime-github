@@ -5,7 +5,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import re
 import sublime
 import sublime_plugin
-import webbrowser
 import plistlib
 from github import GitHubApi
 import logging as logger
@@ -283,7 +282,7 @@ class OpenGistInBrowserCommand(OpenGistCommand):
         if idx == -1:
             return
         gist = self.gists[idx]
-        webbrowser.open(gist["html_url"])
+        sublime.active_window().run_command('open_url', {'url': gist['html_url']})
 
 
 class OpenStarredGistInBrowserCommand(OpenGistInBrowserCommand):
@@ -505,7 +504,7 @@ class OpenRemoteUrlCommand(RemoteUrlCommand):
         super(OpenRemoteUrlCommand, self).run(edit)
 
     def on_done(self):
-        webbrowser.open(self.url)
+        sublime.active_window().run_command('open_url', {'url': self.url})
 
 
 class OpenRemoteUrlMasterCommand(OpenRemoteUrlCommand):
