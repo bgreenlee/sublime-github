@@ -1,8 +1,13 @@
+"""
+Module to handle HTTP Requests, either through the Requests library or curl
+"""
 import sys
 import os.path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
 import re
+from io import BytesIO
+import logging
 import requests
 from requests.status_codes import codes
 try:
@@ -11,14 +16,15 @@ except ImportError:
     import httplib
 import commandline
 import sublime
-from io import BytesIO
-import logging
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger()
 
 
 class CurlSession(object):
+    """
+    Fakes the Requests interface for curl
+    """
     ERR_UNKNOWN_CODE = "Curl failed with an unrecognized code"
     CURL_ERRORS = {
         2: "Curl failed initialization.",
@@ -72,14 +78,14 @@ class CurlSession(object):
             # string in the header
             text = re.sub(r'(?<!\r\n\r\n).*?Transfer-Encoding: chunked\r\n', '', text, count=1)
 
-        logger.debug("CurlSession - getting socket from %s" % text)
+        logger.debug("CurlSession - getting socket from %s", text)
         socket = self.FakeSocket(text.encode())
         response = httplib.HTTPResponse(socket)
         response.begin()
         return response
 
     def _build_response(self, text):
-        logger.debug("CurlSession: building response from %s" % text)
+        logger.debug("CurlSession: building response from %s", text)
         raw_response = self._parse_http(text)
         response = requests.models.Response()
         response.encoding = 'utf-8'
@@ -89,6 +95,9 @@ class CurlSession(object):
         return response
 
     def request(self, method, url, headers=None, params=None, data=None, auth=None, allow_redirects=False, config=None, proxies=None):
+        """
+        Execute an HTTP request via curl
+        """
         try:
             curl = commandline.find_binary('curl')
         except commandline.BinaryNotFoundError:
@@ -114,11 +123,11 @@ class CurlSession(object):
 
         command = [curl] + curl_options + [url]
 
-        logger.debug("CurlSession: invoking curl with %s" % command)
+        logger.debug("CurlSession: invoking curl with %s", command)
         try:
             command_response = commandline.execute(command)
         except commandline.CommandExecutionError as e:
-            logger.error("Curl execution: %s" % repr(e))
+            logger.error("Curl execution: %s", repr(e))
             self._handle_curl_error(e.errorcode)
             return
 
@@ -127,6 +136,9 @@ class CurlSession(object):
         return response
 
     def post(self, *args, **kwargs):
+        """
+        Return a POST request
+        """
         return self.request("post", *args, **kwargs)
 
     def _handle_curl_error(self, error):
@@ -135,9 +147,12 @@ class CurlSession(object):
 
 
 def session(verify=None, force_curl=False):
+    """
+    Return either a Requests or a Curl session object.
+    """
     if not force_curl and hasattr(httplib, "HTTPSConnection"):
-        session = requests.Session()
-        session.verify = verify
-        return session
-    else:  # try curl
-        return CurlSession(verify=verify)
+        sess = requests.Session()
+        sess.verify = verify
+        return sess
+    # try curl
+    return CurlSession(verify=verify)
