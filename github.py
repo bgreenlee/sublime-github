@@ -123,7 +123,7 @@ class GitHubApi(object):
                                          data=data,
                                          proxies=self.proxies,
                                          allow_redirects=True)
-            if not resp:
+            if resp is None:
                 raise self.NullResponseException("Empty response received.")
         except ConnectionError as e:
             raise self.ConnectionException(
