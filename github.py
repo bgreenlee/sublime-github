@@ -1,12 +1,16 @@
+"""
+GitHub API
+"""
 import sys
 import os.path
+import json
+import logging
+import pprint
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import sublime
-import json
 import sublime_requests as requests
-import logging
 from requests.exceptions import ConnectionError
-import pprint
 
 logging.basicConfig(format='%(asctime)s %(message)s')
 logger = logging.getLogger()
@@ -58,7 +62,7 @@ class GitHubApi(object):
         # set up requests session with the root CA cert bundle
         cert_path = os.path.join(sublime.packages_path(), "sublime-github", "ca-bundle.crt")
         if not os.path.isfile(cert_path):
-            logger.warning("Root CA cert bundle not found at %s! Not verifying requests." % cert_path)
+            logger.warning("Root CA cert bundle not found at %s! Not verifying requests.", cert_path)
             cert_path = None
         self.rsession = requests.session(verify=cert_path,
                                          force_curl=force_curl)
@@ -110,23 +114,23 @@ class GitHubApi(object):
         # add an etag to the header if we have one
         if method == 'get' and url in self.etags:
             headers["If-None-Match"] = self.etags[url]
-        logger.debug("request: %s %s %s %s" % (method, url, headers, params))
+        logger.debug("request: %s %s %s %s", method, url, headers, params)
 
         try:
             resp = self.rsession.request(method, url,
-                                     headers=headers,
-                                     params=params,
-                                     data=data,
-                                     proxies=self.proxies,
-                                     allow_redirects=True)
+                                         headers=headers,
+                                         params=params,
+                                         data=data,
+                                         proxies=self.proxies,
+                                         allow_redirects=True)
             if not resp:
                 raise self.NullResponseException("Empty response received.")
         except ConnectionError as e:
-            raise self.ConnectionException("Connection error, "
-                "please verify your internet connection: %s" % e)
+            raise self.ConnectionException(
+                "Connection error, please verify your internet connection: %s", e)
 
         full_url = resp.url
-        logger.debug("response: %s" % resp.headers)
+        logger.debug("response: %s", resp.headers)
         if resp.status_code in [requests.codes.OK,
                                 requests.codes.CREATED,
                                 requests.codes.FOUND,

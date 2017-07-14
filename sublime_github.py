@@ -1,13 +1,17 @@
+"""
+SublimeGitHub commands
+"""
 import os
-import sys
 import os.path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sys
 import re
+import logging as logger
+import plistlib
 import sublime
 import sublime_plugin
-import plistlib
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from github import GitHubApi
-import logging as logger
 try:
     import xml.parsers.expat as expat
 except ImportError:
@@ -154,16 +158,16 @@ class OpenGistCommand(BaseGitHubCommand):
         try:
             gists = self.gistapi.list_gists(starred=self.starred)
             self.gists = sorted(gists, key=lambda x: (x.get("description") or "").lower())
-            format = self.settings.get("gist_list_format")
+            gist_list_format = self.settings.get("gist_list_format")
             packed_gists = []
             for idx, gist in enumerate(self.gists):
                 attribs = {"index": idx + 1,
                            "filename": list(gist["files"].keys())[0],
                            "description": gist["description"] or ''}
-                if isinstance(format, list):
-                    item = [(format_str % attribs) for format_str in format]
+                if isinstance(gist_list_format, list):
+                    item = [(format_str % attribs) for format_str in gist_list_format]
                 else:
-                    item = format % attribs
+                    item = gist_list_format % attribs
                 packed_gists.append(item)
 
             args = [packed_gists, self.on_done]
@@ -181,7 +185,6 @@ class OpenGistCommand(BaseGitHubCommand):
             return
         gist = self.gists[idx]
         filename = list(gist["files"].keys())[0]
-        filedata = gist["files"][filename]
         content = self.gistapi.get_gist(gist)
         if self.open_in_editor:
             new_view = self.view.window().new_file()
@@ -194,8 +197,8 @@ class OpenGistCommand(BaseGitHubCommand):
                     syntax_file = self.syntax_file_map[extension]
                     new_view.set_syntax_file(syntax_file)
                 except KeyError:
-                    logger.warn("no mapping for '%s'" % extension)
-                    pass
+                    logger.warn("no mapping for '%s'", extension)
+
             # insert the gist
             new_view.run_command("insert_text", {'text': content})
             new_view.set_name(filename)
@@ -224,7 +227,7 @@ class OpenGistCommand(BaseGitHubCommand):
                         for file_type in plist['fileTypes']:
                             syntax_file_map[file_type.lower()] = syntax_file
                 except expat.ExpatError:  # can't parse
-                    logger.warn("could not parse '%s'" % syntax_file)
+                    logger.warn("could not parse '%s'", syntax_file)
                 except KeyError:  # no file types
                     pass
 
@@ -238,7 +241,7 @@ class OpenGistCommand(BaseGitHubCommand):
                         for file_type in plist['fileTypes']:
                             syntax_file_map[file_type.lower()] = syntax_file
                 except expat.ExpatError:  # can't parse
-                    logger.warn("could not parse '%s'" % syntax_file)
+                    logger.warn("could not parse '%s'", syntax_file)
                 except KeyError:  # no file types
                     pass
 
@@ -455,7 +458,7 @@ if git:
             # Replace the "tld:" with "tld/"
             # https://github.com/bgreenlee/sublime-github/pull/49#commitcomment-3688312
             repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
-            repo_url = re.sub('\.git$', '', repo_url)
+            repo_url = re.sub(r'\.git$', '', repo_url)
             self.repo_url = repo_url
             self.run_command("git rev-parse --show-toplevel".split(), self.done_toplevel)
 
