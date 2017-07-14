@@ -153,7 +153,7 @@ class OpenGistCommand(BaseGitHubCommand):
     def get_gists(self):
         try:
             gists = self.gistapi.list_gists(starred=self.starred)
-            self.gists = sorted(gists, key=lambda x: x.get("description", "").lower())
+            self.gists = sorted(gists, key=lambda x: (x.get("description") or "").lower())
             format = self.settings.get("gist_list_format")
             packed_gists = []
             for idx, gist in enumerate(self.gists):
