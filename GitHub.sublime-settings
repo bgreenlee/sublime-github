@@ -34,6 +34,10 @@
     "gist_list_format": "%(filename)s: %(description)s",
     // If true, display the list of gists in a monospace font
     "gist_list_monospace": false,
+    // [sort key, order (true = reversed)] for the list of gists; valid values are any of the top-level
+    // elements in the gist API response. E.g.: created_at, updated_at, description
+    // Default is the default sort key & order from GitHub, which is created_at desc
+    "gist_list_sort_by": ["created_at", true],
     // Highlight the line the cursor is on in GitHub, even if the line is not selected
     "always_highlight_current_line": false,
     // output debug info to the console
