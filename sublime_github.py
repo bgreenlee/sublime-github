@@ -60,7 +60,8 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
             self.github_token = self.settings.get("github_token")
             if self.github_token:
                 # migrate to new structure
-                self.settings.set("accounts", {"GitHub": {"base_uri": "https://api.github.com", "github_token": self.github_token}})
+                self.settings.set("accounts", {"GitHub": {
+                                  "base_uri": "https://api.github.com", "github_token": self.github_token}})
                 self.settings.set("active_account", "GitHub")
                 self.active_account = self.settings.get("active_account")
                 self.settings.erase("github_token")
@@ -68,8 +69,10 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
         self.base_uri = self.accounts[self.active_account]["base_uri"]
         self.debug = self.settings.get('debug')
 
-        self.proxies = {'https': self.accounts[self.active_account].get("https_proxy", None)}
-        self.force_curl = self.accounts[self.active_account].get("force_curl", False)
+        self.proxies = {
+            'https': self.accounts[self.active_account].get("https_proxy", None)}
+        self.force_curl = self.accounts[self.active_account].get(
+            "force_curl", False)
         self.gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug,
                                  proxies=self.proxies, force_curl=self.force_curl)
 
@@ -78,13 +81,16 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
         self.get_username()
 
     def get_username(self):
-        self.view.window().show_input_panel(self.MSG_USERNAME, self.github_user or "", self.on_done_username, None, None)
+        self.view.window().show_input_panel(self.MSG_USERNAME,
+                                            self.github_user or "", self.on_done_username, None, None)
 
     def get_password(self):
-        self.view.window().show_input_panel(self.MSG_PASSWORD, "", self.on_done_password, None, None)
+        self.view.window().show_input_panel(self.MSG_PASSWORD,
+                                            "", self.on_done_password, None, None)
 
     def get_one_time_password(self):
-        self.view.window().show_input_panel(self.MSG_ONE_TIME_PASSWORD, "", self.on_done_one_time_password, None, None)
+        self.view.window().show_input_panel(self.MSG_ONE_TIME_PASSWORD,
+                                            "", self.on_done_one_time_password, None, None)
 
     def on_done_username(self, value):
         "Callback for the username show_input_panel."
@@ -109,7 +115,8 @@ class BaseGitHubCommand(sublime_plugin.TextCommand):
             self.accounts[self.active_account]["github_token"] = self.github_token
             self.settings.set("accounts", self.accounts)
             sublime.save_settings("GitHub.sublime-settings")
-            self.gistapi = GitHubApi(self.base_uri, self.github_token, debug=self.debug)
+            self.gistapi = GitHubApi(
+                self.base_uri, self.github_token, debug=self.debug)
             try:
                 if self.callback:
                     sublime.error_message(self.MSG_TOKEN_SUCCESS)
@@ -131,6 +138,7 @@ class InsertTextCommand(sublime_plugin.TextCommand):
     """
     Internal command to insert text into a view.
     """
+
     def run(self, edit, **args):
         self.view.insert(edit, 0, args['text'])
 
@@ -157,9 +165,11 @@ class OpenGistCommand(BaseGitHubCommand):
     def get_gists(self):
         try:
             self.gists = self.gistapi.list_gists(starred=self.starred)
-            sort_by, sort_reversed = self.settings.get("gist_list_sort_by", [None, False])
+            sort_by, sort_reversed = self.settings.get(
+                "gist_list_sort_by", [None, False])
             if sort_by:
-                self.gists = sorted(self.gists, key=lambda x: (x.get(sort_by) or "").lower(), reverse=sort_reversed)
+                self.gists = sorted(self.gists, key=lambda x: (
+                    x.get(sort_by) or "").lower(), reverse=sort_reversed)
             gist_list_format = self.settings.get("gist_list_format")
             packed_gists = []
             for idx, gist in enumerate(self.gists):
@@ -167,7 +177,8 @@ class OpenGistCommand(BaseGitHubCommand):
                            "filename": list(gist["files"].keys())[0],
                            "description": gist["description"] or ''}
                 if isinstance(gist_list_format, list):
-                    item = [(format_str % attribs) for format_str in gist_list_format]
+                    item = [(format_str % attribs)
+                            for format_str in gist_list_format]
                 else:
                     item = gist_list_format % attribs
                 packed_gists.append(item)
@@ -218,10 +229,12 @@ class OpenGistCommand(BaseGitHubCommand):
         """
         syntax_file_map = {}
         packages_path = sublime.packages_path()
-        packages = [f for f in os.listdir(packages_path) if os.path.isdir(os.path.join(packages_path, f))]
+        packages = [f for f in os.listdir(packages_path) if os.path.isdir(
+            os.path.join(packages_path, f))]
         for package in packages:
             package_dir = os.path.join(packages_path, package)
-            syntax_files = [os.path.join(package_dir, f) for f in os.listdir(package_dir) if f.endswith(".tmLanguage")]
+            syntax_files = [os.path.join(package_dir, f) for f in os.listdir(
+                package_dir) if f.endswith(".tmLanguage")]
             for syntax_file in syntax_files:
                 try:
                     plist = plistlib.readPlist(syntax_file)
@@ -238,7 +251,8 @@ class OpenGistCommand(BaseGitHubCommand):
             syntax_files = sublime.find_resources("*.tmLanguage")
             for syntax_file in syntax_files:
                 try:
-                    plist = plistlib.readPlistFromBytes(bytearray(sublime.load_resource(syntax_file), "utf-8"))
+                    plist = plistlib.readPlistFromBytes(
+                        bytearray(sublime.load_resource(syntax_file), "utf-8"))
                     if plist:
                         for file_type in plist['fileTypes']:
                             syntax_file_map[file_type.lower()] = syntax_file
@@ -283,11 +297,13 @@ class OpenGistInBrowserCommand(OpenGistCommand):
     """
     Open a gist in a browser
     """
+
     def on_done(self, idx):
         if idx == -1:
             return
         gist = self.gists[idx]
-        sublime.active_window().run_command('open_url', {'url': gist['html_url']})
+        sublime.active_window().run_command(
+            'open_url', {'url': gist['html_url']})
 
 
 class OpenStarredGistInBrowserCommand(OpenGistInBrowserCommand):
@@ -316,13 +332,15 @@ class GistFromSelectionCommand(BaseGitHubCommand):
             self.get_token()
 
     def get_description(self):
-        self.view.window().show_input_panel(self.MSG_DESCRIPTION, "", self.on_done_description, None, None)
+        self.view.window().show_input_panel(self.MSG_DESCRIPTION,
+                                            "", self.on_done_description, None, None)
 
     def get_filename(self):
         # use the current filename as the default
         current_filename = self.view.file_name() or "snippet.txt"
         filename = os.path.basename(current_filename)
-        self.view.window().show_input_panel(self.MSG_FILENAME, filename, self.on_done_filename, None, None)
+        self.view.window().show_input_panel(self.MSG_FILENAME,
+                                            filename, self.on_done_filename, None, None)
 
     def on_done_description(self, value):
         "Callback for description show_input_panel."
@@ -336,7 +354,8 @@ class GistFromSelectionCommand(BaseGitHubCommand):
         if all([region.empty() for region in self.view.sel()]):
             text = self.view.substr(sublime.Region(0, self.view.size()))
         else:
-            text = "\n".join([self.view.substr(region) for region in self.view.sel()])
+            text = "\n".join([self.view.substr(region)
+                              for region in self.view.sel()])
 
         try:
             gist = self.gistapi.create_gist(description=self.description,
@@ -356,6 +375,7 @@ class GistFromSelectionCommand(BaseGitHubCommand):
             sublime.error_message(e.message)
         except GitHubApi.ConnectionException as e:
             sublime.error_message(e.message)
+
 
 class PrivateGistFromSelectionCommand(GistFromSelectionCommand):
     """
@@ -378,7 +398,8 @@ class UpdateGistCommand(BaseGitHubCommand):
         super(UpdateGistCommand, self).run(edit)
         self.gist = self.view.settings().get('gist')
         if not self.gist:
-            sublime.error_message("Can't update: this doesn't appear to be a valid gist.")
+            sublime.error_message(
+                "Can't update: this doesn't appear to be a valid gist.")
             return
         if self.github_token:
             self.update()
@@ -418,6 +439,7 @@ class SwitchAccountsCommand(BaseGitHubCommand):
             self.base_uri = self.accounts[self.active_account]["base_uri"]
             self.github_token = self.accounts[self.active_account]["github_token"]
 
+
 if git:
     class RemoteUrlCommand(git.GitTextCommand):
         url_type = 'blob'
@@ -446,7 +468,8 @@ if git:
             if not self.active_account:
                 self.active_account = list(self.accounts.keys())[0]
 
-            self.protocol = self.accounts[self.active_account].get("protocol", "https")
+            self.protocol = self.accounts[self.active_account].get(
+                "protocol", "https")
             # Override the remote with the user setting (if it exists)
             remote = self.accounts[self.active_account].get("remote", remote)
 
@@ -462,7 +485,8 @@ if git:
             repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
             repo_url = re.sub(r'\.git$', '', repo_url)
             self.repo_url = repo_url
-            self.run_command("git rev-parse --show-toplevel".split(), self.done_toplevel)
+            self.run_command(
+                "git rev-parse --show-toplevel".split(), self.done_toplevel)
 
         # Get the repo's explicit toplevel path
         def done_toplevel(self, result):
@@ -472,12 +496,14 @@ if git:
             # self.view.file_name() contains backslash on Windows instead of forwardslash
             absolute_path = absolute_path.replace('\\', '/')
             # we case-insensitive split because Windows
-            relative_path = re.split(re.escape(self.toplevel_path), absolute_path, re.IGNORECASE).pop()
+            relative_path = re.split(
+                re.escape(self.toplevel_path), absolute_path, re.IGNORECASE).pop()
 
             line_nums = ""
             if self.allows_line_highlights:
                 # if any lines are selected, the first of those
-                non_empty_regions = [region for region in self.view.sel() if not region.empty()]
+                non_empty_regions = [
+                    region for region in self.view.sel() if not region.empty()]
                 if non_empty_regions:
                     selection = non_empty_regions[0]
                     (start_row, _) = self.view.rowcol(selection.begin())
@@ -491,15 +517,18 @@ if git:
                     if end_row > start_row:
                         line_nums += "-L%s" % (end_row + 1)
                 elif self.settings.get("always_highlight_current_line"):
-                    (current_row, _) = self.view.rowcol(self.view.sel()[0].begin())
+                    (current_row, _) = self.view.rowcol(
+                        self.view.sel()[0].begin())
                     line_nums = "#L%s" % (current_row + 1)
 
-            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, self.remote_branch, relative_path, line_nums)
+            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type,
+                                         self.remote_branch, relative_path, line_nums)
             self.on_done()
 else:
     class RemoteUrlCommand(sublime_plugin.TextCommand):
         def run(self, edit):
-            sublime.error_message("I couldn't find the Git plugin. Please install it, restart Sublime Text, and try again.")
+            sublime.error_message(
+                "I couldn't find the Git plugin. Please install it, restart Sublime Text, and try again.")
 
 
 class OpenRemoteUrlCommand(RemoteUrlCommand):
@@ -525,6 +554,51 @@ class CopyRemoteUrlCommand(RemoteUrlCommand):
     def on_done(self):
         sublime.set_clipboard(self.url)
         sublime.status_message("Remote URL copied to clipboard")
+
+
+class OpenPullCommand(RemoteUrlCommand):
+
+    def run(self, edit):
+        branch = ""
+        command = "git rev-parse --abbrev-ref --symbolic-full-name ""@{upstream}"
+        self.run_command(command.split(), self.generate_pr_url)
+
+    def generate_pr_url(self, result):
+        if "fatal:" in result:
+            sublime.error_message(result)
+            return
+
+        remote, self.remote_branch = result.strip().split("/", 1)
+
+        self.settings = sublime.load_settings("GitHub.sublime-settings")
+        self.active_account = self.settings.get("active_account")
+        self.accounts = self.settings.get("accounts")
+
+        if not self.active_account:
+            self.active_account = list(self.accounts.keys())[0]
+
+        self.protocol = self.accounts[self.active_account].get(
+            "protocol", "https")
+        # Override the remote with the user setting (if it exists)
+        remote = self.accounts[self.active_account].get("remote", remote)
+
+        command = "git ls-remote --get-url " + remote
+
+        self.run_command(command.split(), self.done_remote)
+
+    def done_remote(self, result):
+        remote_loc = result.split()[0]
+        repo_url = re.sub('^git(@|://)', self.protocol + '://', remote_loc)
+        # Replace the "tld:" with "tld/"
+        # https://github.com/bgreenlee/sublime-github/pull/49#commitcomment-3688312
+        repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
+        repo_url = re.sub(r'\.git$', '', repo_url)
+        self.repo_url = repo_url
+        self.url = "%s/pull/%s" % (self.repo_url, self.remote_branch)
+        self.on_done()
+
+    def on_done(self):
+        sublime.active_window().run_command('open_url', {'url': self.url})
 
 
 class CopyRemoteUrlMasterCommand(CopyRemoteUrlCommand):

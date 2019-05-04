@@ -21,5 +21,6 @@
     { "caption": "GitHub: History", "command": "history"},
     { "caption": "GitHub: History (master)", "command": "history_master"},
     { "caption": "GitHub: Edit", "command": "edit"},
-    { "caption": "GitHub: Edit (master)", "command": "edit_master"}
+    { "caption": "GitHub: Edit (master)", "command": "edit_master"},
+    { "caption": "GitHub: Open/Create PR", "command": "open_pull"}
 ]
