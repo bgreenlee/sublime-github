@@ -65,7 +65,7 @@ The following commands are available in the Command Palette:
 
 **The following commands require the Git plugin, available through the Package Manager. After installing, restart Sublime Text.**
 
-**Note:** These commands use the currently checked out branch to generate GitHub URLs. Each command also has a corresponding version, such as **GitHub: Blame (master)**, that always uses the master branch, regardless of which branch is checked out locally.
+**Note:** These commands use the currently checked out branch to generate GitHub URLs. Each command also has a corresponding version, such as **GitHub: Blame (master)**, that always uses the master branch, regardless of which branch is checked out locally. All commands except **GitHub: Edit** have a corresponding "permalink" version too, like **GitHub: Blame (permalink)**, that uses the most recent commit on the current branch ([more info](https://help.github.com/en/articles/getting-permanent-links-to-files)).
 
 * **GitHub: Open Remote URL in Browser**
 

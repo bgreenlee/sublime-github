@@ -422,12 +422,17 @@ if git:
     class RemoteUrlCommand(git.GitTextCommand):
         url_type = 'blob'
         allows_line_highlights = False
-        master = False  # operate on current branch by default
+        # Operate on current branch by default; other values include 'master' to operate on the master branch,
+        # and False to operate on the current HEAD of the current branch i.e. use a permalink
+        # https://help.github.com/en/articles/getting-permanent-links-to-files.
+        branch = 'current'
 
         def run(self, edit):
-            if self.master:
+            if self.branch == "master":
                 branch = "master"
             else:
+                # Get the current remote branch--useful whether we want to link directly to that
+                # branch or to the branch's HEAD.
                 branch = ""
             command = "git rev-parse --abbrev-ref --symbolic-full-name %s@{upstream}" % branch
             self.run_command(command.split(), self.done_rev_parse)
@@ -494,7 +499,25 @@ if git:
                     (current_row, _) = self.view.rowcol(self.view.sel()[0].begin())
                     line_nums = "#L%s" % (current_row + 1)
 
-            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, self.remote_branch, relative_path, line_nums)
+            self.relative_path = relative_path
+            self.line_nums = line_nums
+
+            if self.branch:
+                self.generate_url()
+            else:
+                command = "git rev-parse " + self.remote_branch
+                self.run_command(command.split(), self.done_remote_head)
+
+        def done_remote_head(self, result):
+            self.remote_head = result.strip()
+            self.generate_url()
+
+        def generate_url(self):
+            if self.branch:
+                remote_id = self.remote_branch
+            else:
+                remote_id = self.remote_head
+            self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, remote_id, self.relative_path, self.line_nums)
             self.on_done()
 else:
     class RemoteUrlCommand(sublime_plugin.TextCommand):
@@ -513,7 +536,11 @@ class OpenRemoteUrlCommand(RemoteUrlCommand):
 
 
 class OpenRemoteUrlMasterCommand(OpenRemoteUrlCommand):
-    master = True
+    branch = 'master'
+
+
+class OpenRemoteUrlPermalinkCommand(OpenRemoteUrlCommand):
+    branch = False
 
 
 class CopyRemoteUrlCommand(RemoteUrlCommand):
@@ -528,7 +555,11 @@ class CopyRemoteUrlCommand(RemoteUrlCommand):
 
 
 class CopyRemoteUrlMasterCommand(CopyRemoteUrlCommand):
-    master = True
+    branch = 'master'
+
+
+class CopyRemoteUrlPermalinkCommand(CopyRemoteUrlCommand):
+    branch = False
 
 
 class BlameCommand(OpenRemoteUrlCommand):
@@ -536,7 +567,11 @@ class BlameCommand(OpenRemoteUrlCommand):
 
 
 class BlameMasterCommand(BlameCommand):
-    master = True
+    branch = 'master'
+
+
+class BlamePermalinkCommand(BlameCommand):
+    branch = False
 
 
 class HistoryCommand(OpenRemoteUrlCommand):
@@ -545,7 +580,11 @@ class HistoryCommand(OpenRemoteUrlCommand):
 
 
 class HistoryMasterCommand(HistoryCommand):
-    master = True
+    branch = 'master'
+
+
+class HistoryPermalinkCommand(HistoryCommand):
+    branch = False
 
 
 class EditCommand(OpenRemoteUrlCommand):
@@ -554,4 +593,7 @@ class EditCommand(OpenRemoteUrlCommand):
 
 
 class EditMasterCommand(EditCommand):
-    master = True
+    branch = 'master'
+
+
+# GitHub only supports editing files on branches, so we don't define an `EditPermalinkCommand`.
