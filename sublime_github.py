@@ -554,6 +554,51 @@ class CopyRemoteUrlCommand(RemoteUrlCommand):
         sublime.status_message("Remote URL copied to clipboard")
 
 
+class OpenPullCommand(RemoteUrlCommand):
+
+    def run(self, edit):
+        branch = ""
+        command = "git rev-parse --abbrev-ref --symbolic-full-name ""@{upstream}"
+        self.run_command(command.split(), self.generate_pr_url)
+
+    def generate_pr_url(self, result):
+        if "fatal:" in result:
+            sublime.error_message(result)
+            return
+
+        remote, self.remote_branch = result.strip().split("/", 1)
+
+        self.settings = sublime.load_settings("GitHub.sublime-settings")
+        self.active_account = self.settings.get("active_account")
+        self.accounts = self.settings.get("accounts")
+
+        if not self.active_account:
+            self.active_account = list(self.accounts.keys())[0]
+
+        self.protocol = self.accounts[self.active_account].get(
+            "protocol", "https")
+        # Override the remote with the user setting (if it exists)
+        remote = self.accounts[self.active_account].get("remote", remote)
+
+        command = "git ls-remote --get-url " + remote
+
+        self.run_command(command.split(), self.done_remote)
+
+    def done_remote(self, result):
+        remote_loc = result.split()[0]
+        repo_url = re.sub('^git(@|://)', self.protocol + '://', remote_loc)
+        # Replace the "tld:" with "tld/"
+        # https://github.com/bgreenlee/sublime-github/pull/49#commitcomment-3688312
+        repo_url = re.sub(r'^(https?://[^/:]+):', r'\1/', repo_url)
+        repo_url = re.sub(r'\.git$', '', repo_url)
+        self.repo_url = repo_url
+        self.url = "%s/pull/%s" % (self.repo_url, self.remote_branch)
+        self.on_done()
+
+    def on_done(self):
+        sublime.active_window().run_command('open_url', {'url': self.url})
+
+
 class CopyRemoteUrlMasterCommand(CopyRemoteUrlCommand):
     branch = 'master'
 
