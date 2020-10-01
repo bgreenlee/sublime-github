@@ -163,7 +163,7 @@ That's it!
 
 If you are behind a proxy you can configure it for each account.
 
-Note that until a [bug](https://github.com/shazow/urllib3/pull/170) in urllib3 is fixed, in order to use a proxy you also have to force curl mode (Curl is required obviously).
+Note that until a [bug](https://github.com/shazow/urllib3/pull/170) in urllib3 is fixed, in order to use a proxy you also have to force curl mode (curl is required obviously).
 
 For example:
 
