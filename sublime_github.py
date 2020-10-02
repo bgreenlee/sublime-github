@@ -431,19 +431,35 @@ if git:
             if self.branch == "master":
                 branch = "master"
             else:
-                # Get the current remote branch--useful whether we want to link directly to that
-                # branch or to the branch's HEAD.
+                # Get the current remote branch. Won't be used for permalink commands but is still
+                # useful to give us the remote name.
                 branch = ""
             command = "git rev-parse --abbrev-ref --symbolic-full-name %s@{upstream}" % branch
-            self.run_command(command.split(), self.done_rev_parse)
+            self.run_command(command.split(), self.done_remote_branch)
 
-        def done_rev_parse(self, result):
+        def done_remote_branch(self, result):
             if "fatal:" in result:
-                sublime.error_message(result)
-                return
+                if ("no upstream configured" in result or "HEAD does not point to a branch" in result) and not self.branch:
+                    # These results indicate either that the user has not pushed the branch to the remote
+                    # or that the user has a commit checked out rather than a branch. If this is a permalink
+                    # command (`not self.branch`) and the user has only one remote, then we can proceed
+                    # regardless, since we don't calculate the permalink with respect to the remote branch
+                    # but rather the local HEAD--see `generate_url` for why.
+                    self.run_command("git remote".split(), self.done_remote_list)
+                else:
+                    sublime.error_message(result)
+            else:
+                remote, self.remote_branch = result.strip().split("/", 1)
+                self.done_remote(remote)
 
-            remote, self.remote_branch = result.strip().split("/", 1)
+        def done_remote_list(self, result):
+            remote_list = result.strip().split('\n')
+            if len(remote_list) == 1:
+                self.done_remote(remote_list[0])
+            else:
+                sublime.error_message("Please push this branch to a remote, then re-run this command.")
 
+        def done_remote(self, remote):
             self.settings = sublime.load_settings("GitHub.sublime-settings")
             self.active_account = self.settings.get("active_account")
             self.accounts = self.settings.get("accounts")
@@ -457,9 +473,9 @@ if git:
 
             command = "git ls-remote --get-url " + remote
 
-            self.run_command(command.split(), self.done_remote)
+            self.run_command(command.split(), self.done_remote_url)
 
-        def done_remote(self, result):
+        def done_remote_url(self, result):
             remote_loc = result.split()[0]
             repo_url = re.sub('^git(@|://)', self.protocol + '://', remote_loc)
             # Replace the "tld:" with "tld/"
@@ -505,18 +521,25 @@ if git:
             if self.branch:
                 self.generate_url()
             else:
-                command = "git rev-parse " + self.remote_branch
-                self.run_command(command.split(), self.done_remote_head)
+                command = "git rev-parse HEAD"
+                self.run_command(command.split(), self.done_head)
 
-        def done_remote_head(self, result):
-            self.remote_head = result.strip()
+        def done_head(self, result):
+            self.head = result.strip()
             self.generate_url()
 
         def generate_url(self):
             if self.branch:
                 remote_id = self.remote_branch
             else:
-                remote_id = self.remote_head
+                # Reference the local HEAD for permalinks, rather than the HEAD of the remote branch, because
+                # this way we'll get a link to what the user is actually looking at in their editor. This also
+                # lets the user run the permalink command with a commit checked out rather than a branch; or
+                # having checked out a branch that they've just created, if the user has neither added commits
+                # to that branch nor pushed the branch to the remote. If the user _has_ added commits to such
+                # a branch without pushing them to the remote, then the link will 404 on GitHub. At some
+                # future point, it might be nice to detect this and show an error message locally.
+                remote_id = self.head
             self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, remote_id, self.relative_path, self.line_nums)
             self.on_done()
 else:
