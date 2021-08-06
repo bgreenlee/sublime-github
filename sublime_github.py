@@ -422,14 +422,15 @@ if git:
     class RemoteUrlCommand(git.GitTextCommand):
         url_type = 'blob'
         allows_line_highlights = False
-        # Operate on current branch by default; other values include 'master' to operate on the master branch,
-        # and False to operate on the current HEAD of the current branch i.e. use a permalink
-        # https://help.github.com/en/articles/getting-permanent-links-to-files.
+        # Operate on current branch by default; other values include 'default' to operate on the default branch defined
+        # in GitHub.sublime-settings, and False to operate on the current HEAD of the current branch i.e. use a
+        # permalink https://help.github.com/en/articles/getting-permanent-links-to-files.
         branch = 'current'
 
         def run(self, edit):
-            if self.branch == "master":
-                branch = "master"
+            if self.branch == "default":
+                self.settings = sublime.load_settings("GitHub.sublime-settings")
+                branch = self.settings.get("default_branch")
             else:
                 # Get the current remote branch--useful whether we want to link directly to that
                 # branch or to the branch's HEAD.
@@ -535,8 +536,8 @@ class OpenRemoteUrlCommand(RemoteUrlCommand):
         sublime.active_window().run_command('open_url', {'url': self.url})
 
 
-class OpenRemoteUrlMasterCommand(OpenRemoteUrlCommand):
-    branch = 'master'
+class OpenRemoteUrlDefaultCommand(OpenRemoteUrlCommand):
+    branch = "default"
 
 
 class OpenRemoteUrlPermalinkCommand(OpenRemoteUrlCommand):
@@ -599,8 +600,8 @@ class OpenPullCommand(RemoteUrlCommand):
         sublime.active_window().run_command('open_url', {'url': self.url})
 
 
-class CopyRemoteUrlMasterCommand(CopyRemoteUrlCommand):
-    branch = 'master'
+class CopyRemoteUrlDefaultCommand(CopyRemoteUrlCommand):
+    branch = "default"
 
 
 class CopyRemoteUrlPermalinkCommand(CopyRemoteUrlCommand):
@@ -611,8 +612,8 @@ class BlameCommand(OpenRemoteUrlCommand):
     url_type = 'blame'
 
 
-class BlameMasterCommand(BlameCommand):
-    branch = 'master'
+class BlameDefaultCommand(BlameCommand):
+    branch = "default"
 
 
 class BlamePermalinkCommand(BlameCommand):
@@ -624,8 +625,8 @@ class HistoryCommand(OpenRemoteUrlCommand):
     allows_line_highlights = False
 
 
-class HistoryMasterCommand(HistoryCommand):
-    branch = 'master'
+class HistoryDefaultCommand(HistoryCommand):
+    branch = "default"
 
 
 class HistoryPermalinkCommand(HistoryCommand):
@@ -637,8 +638,8 @@ class EditCommand(OpenRemoteUrlCommand):
     allows_line_highlights = False
 
 
-class EditMasterCommand(EditCommand):
-    branch = 'master'
+class EditDefaultCommand(EditCommand):
+    branch = "default"
 
 
 # GitHub only supports editing files on branches, so we don't define an `EditPermalinkCommand`.
