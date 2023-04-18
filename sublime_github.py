@@ -475,6 +475,8 @@ if git:
             self.toplevel_path = result.strip()
             # get file path within repo
             absolute_path = self.view.file_name()
+            # resolve symlinks and subst drives (windows) because git does this when getting toplevel_path
+            absolute_path = os.path.realpath(absolute_path)
             # self.view.file_name() contains backslash on Windows instead of forwardslash
             absolute_path = absolute_path.replace('\\', '/')
             # we case-insensitive split because Windows
