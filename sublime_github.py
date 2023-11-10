@@ -436,9 +436,21 @@ if git:
                 if default_branch_setting:
                     branch = default_branch_setting
                 else:
+                    # Get the path of the currently opened file
+                    file_path = self.view.window().active_view().file_name()
+
+                    # Get the list of folders in the project
+                    folders = self.view.window().folders()
+
+                    top_level_folder = None
+                    for folder in folders:
+                        if file_path.startswith(folder):
+                            top_level_folder = folder
+                            break
+
                     branch = (
                         subprocess.check_output(
-                            "git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'",
+                            "git -C %s symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'"%(top_level_folder),
                             stderr=subprocess.STDOUT,
                             shell=True,
                         )
