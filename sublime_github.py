@@ -9,6 +9,7 @@ import logging as logger
 import plistlib
 import sublime
 import sublime_plugin
+import subprocess
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from github import GitHubApi
@@ -430,7 +431,20 @@ if git:
         def run(self, edit):
             if self.branch == "default":
                 self.settings = sublime.load_settings("GitHub.sublime-settings")
-                branch = self.settings.get("default_branch")
+                default_branch_setting = self.settings.get("default_branch")
+
+                if default_branch_setting:
+                    branch = default_branch_setting
+                else:
+                    branch = (
+                        subprocess.check_output(
+                            "git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@'",
+                            stderr=subprocess.STDOUT,
+                            shell=True,
+                        )
+                        .decode("utf-8")
+                        .strip()
+                    )
             else:
                 # Get the current remote branch--useful whether we want to link directly to that
                 # branch or to the branch's HEAD.

@@ -45,5 +45,6 @@
 
     // The default branch to use when issuing Copy Remote URL to Clipboard, Open Remote URL in Browser, View, Blame,
     // History, or Edit commands
+    // Set to falsey values to fetch the current repo's default branch
     "default_branch": "main",
 }
