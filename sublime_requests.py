@@ -20,7 +20,7 @@ class codes:
 
 class Response:
     def __init__(self, response):
-        self.status_code = response.status
+        self.status_code = getattr(response, "status", None) or response.code
         self.headers = response.headers
         self.url = response.url
         self.text = response.read().decode("utf-8")
