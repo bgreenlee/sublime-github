@@ -201,6 +201,67 @@ class PluginTests(unittest.TestCase):
             self.assertEqual([os.path.realpath(path) for path in results], [os.path.realpath(directory)])
             self.assertEqual(os.getcwd(), original_cwd)
 
+    @unittest.skipIf(os.name == "nt", "creating symlinks requires Windows developer permissions")
+    def test_repository_link_keeps_symlink_filename(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(os.path.realpath(directory)) / "repo"
+            repo.mkdir()
+            (repo / "target.py").touch()
+            link = repo / "link.py"
+            link.symlink_to("target.py")
+            command = self.plugin.OpenRemoteUrlCommand()
+            command.view = types.SimpleNamespace(file_name=lambda: str(link), sel=lambda: [])
+            command.repo_url = "https://github.com/Giftly/China"
+            command.remote_branch = "main"
+            command.settings = types.SimpleNamespace(get=lambda key: None)
+            command.done_toplevel(str(repo))
+            self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/main/link.py")
+
+    @unittest.skipIf(os.name == "nt", "creating symlinks requires Windows developer permissions")
+    def test_repository_link_resolves_directory_alias_but_keeps_file_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            directory = os.path.realpath(directory)
+            repo = Path(directory) / "repo"
+            repo.mkdir()
+            (repo / "target.py").touch()
+            (repo / "link.py").symlink_to("target.py")
+            alias = Path(directory) / "alias"
+            alias.symlink_to(repo, target_is_directory=True)
+            command = self.plugin.OpenRemoteUrlCommand()
+            command.view = types.SimpleNamespace(file_name=lambda: str(alias / "link.py"), sel=lambda: [])
+            command.repo_url = "https://github.com/Giftly/China"
+            command.remote_branch = "main"
+            command.settings = types.SimpleNamespace(get=lambda key: None)
+            command.done_toplevel(str(repo))
+            self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/main/link.py")
+
+    @unittest.skipUnless(os.name == "nt", "requires Windows subst drives")
+    def test_repository_link_on_subst_drive(self):
+        with tempfile.TemporaryDirectory() as directory:
+            repo = Path(directory) / "repo"
+            repo.mkdir()
+            (repo / "file.py").touch()
+            drive = next(letter for letter in "ZYXWVUTSRQPONMLKJ" if not os.path.exists(letter + ":\\"))
+            subprocess.run(["subst", drive + ":", directory], check=True)
+            try:
+                mapped_repo = drive + ":\\repo"
+                subprocess.run(["git", "init", "-q", mapped_repo], check=True)
+                git_root = subprocess.check_output(
+                    ["git", "-C", mapped_repo, "rev-parse", "--show-toplevel"], text=True,
+                ).strip()
+                command = self.plugin.OpenRemoteUrlCommand()
+                command.view = types.SimpleNamespace(file_name=lambda: mapped_repo + "\\file.py", sel=lambda: [])
+                command.repo_url = "https://github.com/Giftly/China"
+                command.remote_branch = "main"
+                command.settings = types.SimpleNamespace(get=lambda key: None)
+                command.done_toplevel(git_root)
+                self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/main/file.py")
+                # Also exercise the physical path Git may return when using subst.
+                command.done_toplevel(str(repo))
+                self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/main/file.py")
+            finally:
+                subprocess.run(["subst", drive + ":", "/D"], check=True)
+
     def test_view_and_blame_detect_default_branch_and_include_selected_lines(self):
         class Region:
             def begin(self): return 9

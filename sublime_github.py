@@ -390,13 +390,25 @@ if git:
         # Get the repo's explicit toplevel path
         def done_toplevel(self, result):
             self.toplevel_path = result.strip()
-            # get file path within repo
+            # Preserve the opened filename (including symlinks) whenever its path is already relative to Git's root.
             absolute_path = self.view.file_name()
-            # resolve symlinks and subst drives (windows) because git does this when getting toplevel_path
-            absolute_path = os.path.realpath(absolute_path)
-            # self.view.file_name() contains backslash on Windows instead of forwardslash
-            absolute_path = absolute_path.replace('\\', '/')
-            relative_path = "/" + os.path.relpath(absolute_path, self.toplevel_path).replace('\\', '/')
+            try:
+                relative_path = os.path.relpath(absolute_path, self.toplevel_path)
+            except ValueError:  # Different drives, e.g. a Windows subst drive vs Git's physical path.
+                relative_path = None
+            if relative_path is None or relative_path == os.pardir or relative_path.startswith(os.pardir + os.sep):
+                # Resolve only the parent directory so a symlinked file keeps its name in the GitHub URL.
+                parent = os.path.realpath(os.path.dirname(absolute_path))
+                root = os.path.realpath(self.toplevel_path)
+                try:
+                    relative_path = os.path.relpath(os.path.join(parent, os.path.basename(absolute_path)), root)
+                except ValueError:
+                    sublime.error_message("Cannot locate this file within the Git repository.")
+                    return
+            if relative_path == os.pardir or relative_path.startswith(os.pardir + os.sep):
+                sublime.error_message("This file is outside the Git repository.")
+                return
+            relative_path = "/" + relative_path.replace('\\', '/')
 
             line_nums = ""
             if self.allows_line_highlights:
