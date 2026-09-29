@@ -1,23 +1,22 @@
 # Sublime GitHub
 
 This is a plugin for the [Sublime Text](http://www.sublimetext.com/) text
-editor (both versions 2 and 3) that provides a number of useful commands for GitHub, including creating and browsing gists,
+editor that provides a number of useful commands for GitHub, including creating and browsing gists,
 opening and editing files on GitHub, and bringing up the blame and commit history views.
 
 ## Installation
 
-You can install via [**Sublime Package Control**](http://wbond.net/sublime_packages/package_control) plugin.
-Just open "Package Control: Install Package" in your Command Palette and search for "sublime-github". The plugin should be picked up automatically. If not, restart Sublime Text.
+Install with Package Control (search for `sublime-github`), or place this folder at `Packages/sublime-github` (Preferences > Browse Packages opens `Packages`). Restart Sublime Text if the commands do not appear.
 
 ## Usage
 
-The first time you run one of the commands, it will ask you for your GitHub username and password in order to create a GitHub API access token, which gets saved in the Sublime GitHub user settings file. Your username and password are not stored anywhere, but if you would rather generate the access token yourself, see the "Generating Your Own Access Token" section below.
+Repository commands need `git` on the Sublime Text process PATH, but no separate Git plugin or GitHub token. Gist commands require a personal access token; see "Generating Your Own Access Token" below.
 
 The following commands are available in the Command Palette:
 
 * **GitHub: Switch Accounts**
 
-    Switch to another GitHub account (see Adding Additional Accounts below)
+    Switch to another configured GitHub account (see Adding Additional Accounts below)
 
 * **GitHub: Private Gist from Selection**
 
@@ -63,7 +62,7 @@ The following commands are available in the Command Palette:
 
     Update the gist open in the current editor.
 
-**The following commands require the Git plugin, available through the Package Manager. After installing, restart Sublime Text.**
+**The following commands require a `git` executable on your PATH, but not the Git Sublime package.**
 
 **Note:** These commands use the currently checked out branch to generate GitHub URLs. Each command also has a corresponding version, such as **GitHub: Blame (default branch)**, that always uses the default branch configured in
 plugin settings, regardless of which branch is checked out locally. This default branch is set to **main**, and can be changed by editing the **default_branch** setting in Preferences > Package Settings > GitHub. All commands except **GitHub: Edit** have a corresponding "permalink" version too, like **GitHub: Blame (permalink)**, that uses the most recent commit on the current branch ([more info](https://help.github.com/en/articles/getting-permanent-links-to-files)).
@@ -118,8 +117,7 @@ whatever the base url is for your private GitHub, plus "/api/v3". For example:
         }
     }
 
-Don't worry about setting the `github_token`--that will be set for you automatically, after you
-switch accounts (Shift-Cmd-P, "GitHub: Switch Accounts").
+Set `github_token` to a personal access token with Gist access for each account where you use Gist commands. Switching accounts does not generate a token. Repository links do not need one.
 
 ## Key Bindings
 
@@ -137,34 +135,26 @@ Available commands can be seen in <https://github.com/bgreenlee/sublime-github/b
 
 ## Issues
 
-* Linux requires the [curl](http://curl.haxx.se/) binary to be installed on your system (in one of:
-`/usr/local/sbin`, `/usr/local/bin`, `/usr/sbin`, `/usr/bin`, `/sbin`, or `/bin`).
-
 * Depending on the number of gists you have, there can be a considerable delay the first time your list of gists is fetched. Subsequent requests will be cached and should be a bit faster (although the GitHub API's ETags are currently not correct; once they fix that, it should speed things up). In the meantime, if there are gists that you open frequently, open them on GitHub and "Star" them, then access them via the Open/Copy Starred Gist commands.
-
-* Setting the file type for syntax highlighting when opening a gist in the editor does not work in Linux. I could get it to work with significant effort, so if you desperately want it, open an issue.
 
 ## Generating Your Own Access Token
 
-If you feel uncomfortable giving your GitHub username and password to the plugin, you can generate a GitHub API access token yourself. Just open up a Terminal window/shell (on OS X, Linux or Cygwin), and run:
-
-    curl -u username -d '{"scopes":["gist"], "note": "sublime-github"}' https://api.github.com/authorizations
-
-where `username` is your GitHub username. You'll be prompt for your password first. Then you'll get back a response that includes a 40-digit "token" value (e.g. `6423ba8429a152ff4a7279d1e8f4674029d3ef87`). Go to Sublime Text 2 -> Preferences -> Package Settings -> GitHub -> Settings - User, and insert the token there. It should look like:
+Create a [GitHub personal access token](https://github.com/settings/tokens) with Gist access. GitHub no longer allows plugins to create tokens from a username and password. In `Packages/User/GitHub.sublime-settings`, set the token for the account:
 
     {
-        "github_token": "6423ba8429a152ff4a7279d1e8f4674029d3ef87"
+        "accounts": {
+            "GitHub": {
+                "base_uri": "https://api.github.com",
+                "github_token": "YOUR_TOKEN"
+            }
+        }
     }
 
-Restart Sublime.
-
-That's it!
+Keep this file private. A token is not required for View, Blame, History, or other repository links.
 
 ## Configuring a proxy
 
 If you are behind a proxy you can configure it for each account.
-
-Note that until a [bug](https://github.com/shazow/urllib3/pull/170) in urllib3 is fixed, in order to use a proxy you also have to force curl mode (curl is required obviously).
 
 For example:
 
@@ -173,8 +163,7 @@ For example:
         "GitHub":
         {
             "base_uri": "https://api.github.com",
-            "https_proxy": "...",
-            "force_curl": true
+            "https_proxy": "..."
         }
     }
 
