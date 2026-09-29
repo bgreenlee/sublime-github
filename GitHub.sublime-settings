@@ -43,7 +43,6 @@
     // output debug info to the console
     "debug": false,
 
-    // The default branch to use when issuing Copy Remote URL to Clipboard, Open Remote URL in Browser, View, Blame,
-    // History, or Edit commands
-    "default_branch": "main",
+    // Optional fallback when the remote's HEAD and main/master tracking refs are unavailable.
+    // "default_branch": "main",
 }
