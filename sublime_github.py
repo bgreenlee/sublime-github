@@ -425,7 +425,19 @@ if git:
                 self.run_command(["git", "rev-parse", "HEAD"], self.done_head)
 
         def done_head(self, result):
+            if not result.strip() or result.lstrip().startswith(("fatal:", "error:")):
+                sublime.error_message("Cannot resolve HEAD: %s" % result.strip())
+                return
             self.head = result.strip()
+            self.run_command(
+                ["git", "branch", "--remotes", "--contains", self.head, "--format=%(refname:short)"],
+                self.done_remote_branches,
+            )
+
+        def done_remote_branches(self, result):
+            if not any(branch.startswith(self.remote + "/") for branch in result.splitlines()):
+                sublime.error_message("Push this commit to %s (or fetch its branches) before creating a permalink." % self.remote)
+                return
             self.generate_url()
 
         def generate_url(self):

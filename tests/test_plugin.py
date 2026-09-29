@@ -51,6 +51,7 @@ class PluginTests(unittest.TestCase):
         github.GitHubApi.etags.clear()
         github.GitHubApi.cache.clear()
         self.errors.clear()
+        type(self).opened_url = None
 
     def test_commands_load_on_current_python(self):
         self.assertTrue(issubclass(self.plugin.BlameDefaultCommand, self.plugin.OpenRemoteUrlCommand))
@@ -308,6 +309,95 @@ class PluginTests(unittest.TestCase):
         command.run(None)
         self.assertIsNone(self.opened_url)
         self.assertIn("origin", self.errors[-1])
+
+    def test_permalink_uses_local_head_on_a_tracked_branch(self):
+        command = self.plugin.OpenRemoteUrlPermalinkCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "origin/feature/topic",
+            "git remote get-url origin": "git@github.com:Giftly/China.git",
+            "git rev-parse --show-toplevel": "/repo",
+            "git rev-parse HEAD": "abc123",
+            "git branch --remotes --contains abc123 --format=%(refname:short)": "origin/main\n",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        command.run(None)
+        self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/abc123/file.rb")
+
+    def test_permalink_uses_local_head_when_detached_with_one_remote(self):
+        command = self.plugin.OpenRemoteUrlPermalinkCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "fatal: HEAD does not point to a branch",
+            "git remote": "origin\n",
+            "git remote get-url origin": "git@github.com:Giftly/China.git",
+            "git rev-parse --show-toplevel": "/repo",
+            "git rev-parse HEAD": "abc123",
+            "git branch --remotes --contains abc123 --format=%(refname:short)": "origin/main\n",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        command.run(None)
+        self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/abc123/file.rb")
+
+    def test_permalink_rejects_unpushed_commit(self):
+        command = self.plugin.OpenRemoteUrlPermalinkCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "origin/feature/topic",
+            "git remote get-url origin": "git@github.com:Giftly/China.git",
+            "git rev-parse --show-toplevel": "/repo",
+            "git rev-parse HEAD": "abc123",
+            "git branch --remotes --contains abc123 --format=%(refname:short)": "fork/main\n",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        command.run(None)
+        self.assertIsNone(self.opened_url)
+        self.assertIn("Push", self.errors[-1])
+
+    def test_permalink_without_upstream_uses_configured_remote(self):
+        command = self.plugin.OpenRemoteUrlPermalinkCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "fatal: no upstream configured",
+            "git remote get-url fork": "git@github.com:Giftly/China.git",
+            "git rev-parse --show-toplevel": "/repo",
+            "git rev-parse HEAD": "abc123",
+            "git branch --remotes --contains abc123 --format=%(refname:short)": "fork/main\n",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        settings = types.SimpleNamespace(get=lambda key, default=None: {
+            "accounts": {"GitHub": {"base_uri": "https://api.github.com", "remote": "fork"}},
+        }.get(key, default))
+        with patch.object(sys.modules["sublime"], "load_settings", return_value=settings):
+            command.run(None)
+        self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/abc123/file.rb")
+
+    def test_permalink_without_upstream_requires_exactly_one_remote_or_a_setting(self):
+        for remotes in ("", "origin\nfork\n"):
+            with self.subTest(remotes=remotes):
+                command = self.plugin.OpenRemoteUrlPermalinkCommand()
+                command.run_command = lambda args, callback: callback({
+                    "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "fatal: no upstream configured",
+                    "git remote": remotes,
+                }[" ".join(args)])
+                command.run(None)
+                self.assertIsNone(self.opened_url)
+                self.assertIn("remote", self.errors[-1])
+
+    def test_permalink_does_not_open_a_link_when_head_is_missing(self):
+        command = self.plugin.OpenRemoteUrlPermalinkCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "fatal: no upstream configured",
+            "git remote": "origin\n",
+            "git remote get-url origin": "git@github.com:Giftly/China.git",
+            "git rev-parse --show-toplevel": "/repo",
+            "git rev-parse HEAD": "fatal: ambiguous argument 'HEAD'",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        command.run(None)
+        self.assertIsNone(self.opened_url)
+        self.assertIn("Cannot resolve HEAD", self.errors[-1])
 
     def test_current_branch_without_upstream_still_reports_error(self):
         command = self.plugin.OpenRemoteUrlCommand()
