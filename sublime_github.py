@@ -297,39 +297,70 @@ if git:
         branch = 'current'
 
         def run(self, edit):
-            if self.branch == "default":
-                self.settings = sublime.load_settings("GitHub.sublime-settings")
-                branch = self.settings.get("default_branch")
-            else:
-                # Get the current remote branch--useful whether we want to link directly to that
-                # branch or to the branch's HEAD.
-                branch = ""
-            command = "git rev-parse --abbrev-ref --symbolic-full-name %s@{upstream}" % branch
-            self.run_command(command.split(), self.done_rev_parse)
+            self.run_command(
+                ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"],
+                self.done_rev_parse,
+            )
 
         def done_rev_parse(self, result):
-            if "fatal:" in result:
-                sublime.error_message(result)
-                return
-
-            remote, self.remote_branch = result.strip().split("/", 1)
-
             self.settings = sublime.load_settings("GitHub.sublime-settings")
             self.active_account = self.settings.get("active_account")
             self.accounts = self.settings.get("accounts")
-
             if not self.active_account:
                 self.active_account = list(self.accounts.keys())[0]
 
+            if "fatal:" in result:
+                if self.branch != "default":
+                    sublime.error_message(result)
+                    return
+                remote = "origin"
+            else:
+                remote, self.remote_branch = result.strip().split("/", 1)
+
             self.protocol = self.accounts[self.active_account].get("protocol", "https")
-            # Override the remote with the user setting (if it exists)
-            remote = self.accounts[self.active_account].get("remote", remote)
+            self.remote = self.accounts[self.active_account].get("remote", remote)
+            if self.branch == "default":
+                self.run_command(
+                    ["git", "symbolic-ref", "--quiet", "--short", f"refs/remotes/{self.remote}/HEAD"],
+                    self.done_default_branch,
+                )
+            else:
+                self.fetch_remote_url()
 
-            command = "git ls-remote --get-url " + remote
+        def done_default_branch(self, result):
+            branch = result.strip()
+            if branch.startswith(self.remote + "/"):
+                self.remote_branch = branch[len(self.remote) + 1:]
+                self.fetch_remote_url()
+            else:
+                self.run_command(
+                    ["git", "for-each-ref", "--format=%(refname:short)",
+                     f"refs/remotes/{self.remote}/main", f"refs/remotes/{self.remote}/master"],
+                    self.done_default_candidates,
+                )
 
-            self.run_command(command.split(), self.done_remote)
+        def done_default_candidates(self, result):
+            refs = set(result.splitlines())
+            for branch in ("main", "master"):
+                if f"{self.remote}/{branch}" in refs:
+                    self.remote_branch = branch
+                    self.fetch_remote_url()
+                    return
+
+            self.remote_branch = self.settings.get("default_branch")
+            if self.remote_branch:
+                self.fetch_remote_url()
+            else:
+                sublime.error_message(f"No default branch found for {self.remote}. Fetch the remote or configure default_branch.")
+
+        def fetch_remote_url(self):
+            # Unlike ls-remote --get-url, this fails for a missing remote instead of returning its name.
+            self.run_command(["git", "remote", "get-url", self.remote], self.done_remote)
 
         def done_remote(self, result):
+            if not result.strip() or result.lstrip().startswith(("fatal:", "error:")):
+                sublime.error_message("Cannot resolve Git remote %s: %s" % (self.remote, result.strip()))
+                return
             remote_loc = result.split()[0]
             repo_url = re.sub('^git(@|://)', self.protocol + '://', remote_loc)
             # Replace the "tld:" with "tld/"

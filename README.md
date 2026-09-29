@@ -64,8 +64,7 @@ The following commands are available in the Command Palette:
 
 **The following commands require a `git` executable on your PATH, but not the Git Sublime package.**
 
-**Note:** These commands use the currently checked out branch to generate GitHub URLs. Each command also has a corresponding version, such as **GitHub: Blame (default branch)**, that always uses the default branch configured in
-plugin settings, regardless of which branch is checked out locally. This default branch is set to **main**, and can be changed by editing the **default_branch** setting in Preferences > Package Settings > GitHub. All commands except **GitHub: Edit** have a corresponding "permalink" version too, like **GitHub: Blame (permalink)**, that uses the most recent commit on the current branch ([more info](https://help.github.com/en/articles/getting-permanent-links-to-files)).
+**Note:** These commands use the current branch by default. Variants such as **GitHub: Blame (default branch)** read the remote's local `HEAD` ref, falling back to its local `main` or `master` tracking ref. This does not contact GitHub; if the local refs are missing, fetch the remote or set `default_branch` in your user settings as a fallback. If the remote changed its default branch, refresh the local pointer with `git remote set-head <remote> -a` when online. All commands except **GitHub: Edit** also have a "permalink" variant, which uses the current remote branch's commit ([more info](https://help.github.com/en/articles/getting-permanent-links-to-files)).
 
 * **GitHub: Open Remote URL in Browser**
 

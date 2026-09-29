@@ -28,6 +28,8 @@ class PluginTests(unittest.TestCase):
         sublime.active_window = lambda: cls.window
         sublime.set_timeout = lambda callback, delay=0: callback()
         sublime.status_message = lambda message: None
+        cls.errors = []
+        sublime.error_message = lambda message: cls.errors.append(message)
         sublime_plugin = types.ModuleType("sublime_plugin")
         sublime_plugin.TextCommand = type("TextCommand", (), {})
         sublime_plugin.WindowCommand = type("WindowCommand", (), {})
@@ -48,6 +50,7 @@ class PluginTests(unittest.TestCase):
         import github
         github.GitHubApi.etags.clear()
         github.GitHubApi.cache.clear()
+        self.errors.clear()
 
     def test_commands_load_on_current_python(self):
         self.assertTrue(issubclass(self.plugin.BlameDefaultCommand, self.plugin.OpenRemoteUrlCommand))
@@ -197,7 +200,7 @@ class PluginTests(unittest.TestCase):
             self.assertEqual([os.path.realpath(path) for path in results], [os.path.realpath(directory)])
             self.assertEqual(os.getcwd(), original_cwd)
 
-    def test_view_and_blame_default_branch_include_selected_lines(self):
+    def test_view_and_blame_detect_default_branch_and_include_selected_lines(self):
         class Region:
             def begin(self): return 9
             def end(self): return 20
@@ -209,8 +212,9 @@ class PluginTests(unittest.TestCase):
             rowcol=lambda point: (1, 0) if point == 9 else (3, 1),
         )
         results = {
-            "git rev-parse --abbrev-ref --symbolic-full-name master@{upstream}": "origin/master",
-            "git ls-remote --get-url origin": "git@github.com:Giftly/China.git",
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "origin/feature/new-ui",
+            "git symbolic-ref --quiet --short refs/remotes/origin/HEAD": "origin/main",
+            "git remote get-url origin": "git@github.com:Giftly/China.git",
             "git rev-parse --show-toplevel": "/repo",
         }
         for command_type, url_type in (
@@ -221,7 +225,96 @@ class PluginTests(unittest.TestCase):
             command.view = view
             command.run_command = lambda args, callback: callback(results[" ".join(args)])
             command.run(None)
-            self.assertEqual(self.opened_url, f"https://github.com/Giftly/China/{url_type}/master/lib/file.rb#L2-L4")
+            self.assertEqual(self.opened_url, f"https://github.com/Giftly/China/{url_type}/main/lib/file.rb#L2-L4")
+
+    def test_default_branch_works_without_upstream_on_current_branch(self):
+        command = self.plugin.OpenRemoteUrlDefaultCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "fatal: no upstream configured",
+            "git symbolic-ref --quiet --short refs/remotes/origin/HEAD": "origin/main",
+            "git remote get-url origin": "git@github.com:Giftly/China.git",
+            "git rev-parse --show-toplevel": "/repo",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        command.run(None)
+        self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/main/file.rb")
+
+    def test_default_branch_falls_back_to_local_tracking_refs(self):
+        for refs, expected in (("origin/main\norigin/master", "main"), ("origin/master", "master")):
+            with self.subTest(refs=refs):
+                command = self.plugin.OpenRemoteUrlDefaultCommand()
+                command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+                responses = {
+                    "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "origin/feature/topic",
+                    "git symbolic-ref --quiet --short refs/remotes/origin/HEAD": "",
+                    "git for-each-ref --format=%(refname:short) refs/remotes/origin/main refs/remotes/origin/master": refs,
+                    "git remote get-url origin": "git@github.com:Giftly/China.git",
+                    "git rev-parse --show-toplevel": "/repo",
+                }
+                command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+                command.run(None)
+                self.assertEqual(self.opened_url, f"https://github.com/Giftly/China/blob/{expected}/file.rb")
+
+    def test_default_branch_uses_configured_remote_and_user_fallback_last(self):
+        command = self.plugin.OpenRemoteUrlDefaultCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        calls = []
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "fatal: no upstream configured",
+            "git symbolic-ref --quiet --short refs/remotes/fork/HEAD": "",
+            "git for-each-ref --format=%(refname:short) refs/remotes/fork/main refs/remotes/fork/master": "",
+            "git remote get-url fork": "git@github.com:Giftly/China.git",
+            "git rev-parse --show-toplevel": "/repo",
+        }
+        command.run_command = lambda args, callback: (calls.append(args), callback(responses[" ".join(args)]))
+        settings = types.SimpleNamespace(get=lambda key, default=None: {
+            "accounts": {"GitHub": {"base_uri": "https://api.github.com", "remote": "fork"}},
+            "default_branch": "develop",
+        }.get(key, default))
+        with patch.object(sys.modules["sublime"], "load_settings", return_value=settings):
+            command.run(None)
+        self.assertEqual(self.opened_url, "https://github.com/Giftly/China/blob/develop/file.rb")
+        self.assertEqual([args[1] for args in calls], ["rev-parse", "symbolic-ref", "for-each-ref", "remote", "rev-parse"])
+
+    def test_missing_default_branch_reports_how_to_recover(self):
+        command = self.plugin.OpenRemoteUrlDefaultCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb")
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "origin/feature/topic",
+            "git symbolic-ref --quiet --short refs/remotes/origin/HEAD": "",
+            "git for-each-ref --format=%(refname:short) refs/remotes/origin/main refs/remotes/origin/master": "",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        settings = types.SimpleNamespace(get=lambda key, default=None: {
+            "accounts": {"GitHub": {"base_uri": "https://api.github.com"}},
+        }.get(key, default))
+        self.opened_url = None
+        with patch.object(sys.modules["sublime"], "load_settings", return_value=settings):
+            command.run(None)
+        self.assertIsNone(self.opened_url)
+        self.assertIn("Fetch the remote", self.errors[-1])
+
+    def test_missing_remote_reports_error_instead_of_opening_invalid_link(self):
+        command = self.plugin.OpenRemoteUrlDefaultCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb", sel=lambda: [])
+        responses = {
+            "git rev-parse --abbrev-ref --symbolic-full-name @{upstream}": "fatal: no upstream configured",
+            "git symbolic-ref --quiet --short refs/remotes/origin/HEAD": "origin/main",
+            "git remote get-url origin": "error: No such remote 'origin'",
+        }
+        command.run_command = lambda args, callback: callback(responses[" ".join(args)])
+        self.opened_url = None
+        command.run(None)
+        self.assertIsNone(self.opened_url)
+        self.assertIn("origin", self.errors[-1])
+
+    def test_current_branch_without_upstream_still_reports_error(self):
+        command = self.plugin.OpenRemoteUrlCommand()
+        command.view = types.SimpleNamespace(file_name=lambda: "/repo/file.rb")
+        command.run_command = lambda args, callback: callback("fatal: no upstream configured")
+        command.run(None)
+        self.assertIn("no upstream", self.errors[-1])
 
 
 if __name__ == "__main__":
