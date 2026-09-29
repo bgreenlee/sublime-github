@@ -12,7 +12,7 @@ import sublime_plugin
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from github import GitHubApi
 
-VERSION = "2.0.1"
+VERSION = "2.0.2"
 
 from sublime_github_support import git
 
