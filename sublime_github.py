@@ -309,16 +309,25 @@ if git:
             if not self.active_account:
                 self.active_account = list(self.accounts.keys())[0]
 
+            self.protocol = self.accounts[self.active_account].get("protocol", "https")
+            configured_remote = self.accounts[self.active_account].get("remote")
             if "fatal:" in result:
-                if self.branch != "default":
+                if self.branch == "default":
+                    remote = "origin"
+                elif self.branch is False:
+                    if configured_remote:
+                        self.remote = configured_remote
+                        self.fetch_remote_url()
+                    else:
+                        self.run_command(["git", "remote"], self.done_remote_list)
+                    return
+                else:
                     sublime.error_message(result)
                     return
-                remote = "origin"
             else:
                 remote, self.remote_branch = result.strip().split("/", 1)
 
-            self.protocol = self.accounts[self.active_account].get("protocol", "https")
-            self.remote = self.accounts[self.active_account].get("remote", remote)
+            self.remote = configured_remote or remote
             if self.branch == "default":
                 self.run_command(
                     ["git", "symbolic-ref", "--quiet", "--short", f"refs/remotes/{self.remote}/HEAD"],
@@ -338,6 +347,14 @@ if git:
                      f"refs/remotes/{self.remote}/main", f"refs/remotes/{self.remote}/master"],
                     self.done_default_candidates,
                 )
+
+        def done_remote_list(self, result):
+            remotes = result.splitlines()
+            if len(remotes) != 1:
+                sublime.error_message("Set a remote in GitHub settings to create a permalink without an upstream branch.")
+                return
+            self.remote = remotes[0]
+            self.fetch_remote_url()
 
         def done_default_candidates(self, result):
             refs = set(result.splitlines())
@@ -405,18 +422,30 @@ if git:
             if self.branch:
                 self.generate_url()
             else:
-                command = "git rev-parse " + self.remote_branch
-                self.run_command(command.split(), self.done_remote_head)
+                self.run_command(["git", "rev-parse", "HEAD"], self.done_head)
 
-        def done_remote_head(self, result):
-            self.remote_head = result.strip()
+        def done_head(self, result):
+            if not result.strip() or result.lstrip().startswith(("fatal:", "error:")):
+                sublime.error_message("Cannot resolve HEAD: %s" % result.strip())
+                return
+            self.head = result.strip()
+            self.run_command(
+                ["git", "branch", "--remotes", "--contains", self.head, "--format=%(refname:short)"],
+                self.done_remote_branches,
+            )
+
+        def done_remote_branches(self, result):
+            if not any(branch.startswith(self.remote + "/") for branch in result.splitlines()):
+                sublime.error_message("Push this commit to %s (or fetch its branches) before creating a permalink." % self.remote)
+                return
             self.generate_url()
 
         def generate_url(self):
             if self.branch:
                 remote_id = self.remote_branch
             else:
-                remote_id = self.remote_head
+                # Use the commit checked out locally, including when HEAD is detached.
+                remote_id = self.head
             self.url = "%s/%s/%s%s%s" % (self.repo_url, self.url_type, remote_id, self.relative_path, self.line_nums)
             self.on_done()
 
